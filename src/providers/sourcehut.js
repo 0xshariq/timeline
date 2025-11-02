@@ -1,18 +1,37 @@
 import fetch from 'node-fetch';
 
 export class SourceHutProvider {
-  constructor(username) {
+  constructor(username, token = null) {
     this.username = username;
     this.baseUrl = 'https://git.sr.ht/api';
+    this.token = token || process.env.SOURCEHUT_TOKEN || null;
+  }
+
+  getHeaders() {
+    const headers = {
+      'Accept': 'application/json',
+      'User-Agent': 'repo-timeline-cli'
+    };
+    
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+    
+    return headers;
   }
 
   async fetchRepos() {
     try {
       // SourceHut API for public repos
-      const res = await fetch(`${this.baseUrl}/${this.username}/repos`);
+      const res = await fetch(`${this.baseUrl}/${this.username}/repos`, {
+        headers: this.getHeaders()
+      });
       if (!res.ok) {
         if (res.status === 404) {
           throw new Error(`User '${this.username}' not found on SourceHut`);
+        }
+        if (res.status === 429) {
+          throw new Error(`SourceHut rate limit exceeded. Please set SOURCEHUT_TOKEN or wait before retrying`);
         }
         throw new Error(`Failed to fetch repos: ${res.statusText}`);
       }
@@ -21,15 +40,20 @@ export class SourceHutProvider {
         .filter(r => r.commits_count && r.commits_count > 0)
         .map((r) => r.name);
     } catch (error) {
-      if (error.message.includes('not found')) throw error;
+      if (error.message.includes('not found') || error.message.includes('rate limit')) throw error;
       throw new Error(`SourceHut API error: ${error.message}`);
     }
   }
 
   async fetchCommits(repo) {
     // SourceHut uses a different API structure
-    const res = await fetch(`${this.baseUrl}/${this.username}/repos/${repo}/log`);
+    const res = await fetch(`${this.baseUrl}/${this.username}/repos/${repo}/log`, {
+      headers: this.getHeaders()
+    });
     if (!res.ok) {
+      if (res.status === 429) {
+        throw new Error(`rate limit exceeded`);
+      }
       throw new Error(`Failed to fetch commits: ${res.statusText}`);
     }
     return await res.json();

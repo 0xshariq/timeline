@@ -1,4 +1,3 @@
-import { createCanvas } from 'canvas';
 import {
   Chart,
   LineController,
@@ -21,6 +20,7 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { MatrixController, MatrixElement } from 'chartjs-chart-matrix';
 import fs from 'fs';
 import { getColorByIndex } from './utils/colors.js';
+import { ensureCanvasWorks } from './utils/canvas-fix.js';
 
 // Register Chart.js components
 Chart.register(
@@ -45,6 +45,9 @@ Chart.register(
 );
 
 export async function generateChart(username, platform, datasets, totalCommits = 0, chartType = 'line') {
+  // Ensure canvas is working before generating charts
+  await ensureCanvasWorks();
+  
   const filename = `timeline-${chartType}.png`;
   
   switch (chartType) {
@@ -72,10 +75,17 @@ export async function generateChart(username, platform, datasets, totalCommits =
 }
 
 async function generateLineChart(username, platform, datasets, totalCommits, filename) {
+  // Import canvas dynamically
+  const { createCanvas } = await import('canvas');
+  
   // Merge all labels (unique sorted dates)
   const allDates = [
     ...new Set(datasets.flatMap((d) => d.labels || [])),
   ].sort((a, b) => new Date(a) - new Date(b));
+
+  if (allDates.length === 0) {
+    throw new Error('No data available to generate line chart');
+  }
 
   // Calculate date range
   const firstDate = allDates[0];
@@ -196,11 +206,18 @@ async function generateLineChart(username, platform, datasets, totalCommits, fil
 }
 
 async function generateBarChart(username, platform, datasets, totalCommits, filename) {
+  // Import canvas dynamically
+  const { createCanvas } = await import('canvas');
+  
   // Calculate total commits per repository
   const repoData = datasets.map(ds => ({
     name: ds.label,
-    commits: ds.data.reduce((sum, val) => sum + val, 0)
-  })).sort((a, b) => b.commits - a.commits);
+    commits: Array.isArray(ds.data) ? ds.data.reduce((sum, val) => sum + (val || 0), 0) : 0
+  })).filter(r => r.commits > 0).sort((a, b) => b.commits - a.commits);
+
+  if (repoData.length === 0) {
+    throw new Error('No data available to generate bar chart');
+  }
 
   const width = 1600;
   const height = 800;
@@ -260,10 +277,17 @@ async function generateBarChart(username, platform, datasets, totalCommits, file
 }
 
 async function generatePieChart(username, platform, datasets, totalCommits, filename) {
+  // Import canvas dynamically
+  const { createCanvas } = await import('canvas');
+  
   const repoData = datasets.map(ds => ({
     name: ds.label,
-    commits: ds.data.reduce((sum, val) => sum + val, 0)
-  })).sort((a, b) => b.commits - a.commits);
+    commits: Array.isArray(ds.data) ? ds.data.reduce((sum, val) => sum + (val || 0), 0) : 0
+  })).filter(r => r.commits > 0).sort((a, b) => b.commits - a.commits);
+
+  if (repoData.length === 0) {
+    throw new Error('No data available to generate pie chart');
+  }
 
   const width = 1600;
   const height = 800;
@@ -317,10 +341,17 @@ async function generatePieChart(username, platform, datasets, totalCommits, file
 }
 
 async function generateDoughnutChart(username, platform, datasets, totalCommits, filename) {
+  // Import canvas dynamically
+  const { createCanvas } = await import('canvas');
+  
   const repoData = datasets.map(ds => ({
     name: ds.label,
-    commits: ds.data.reduce((sum, val) => sum + val, 0)
-  })).sort((a, b) => b.commits - a.commits);
+    commits: Array.isArray(ds.data) ? ds.data.reduce((sum, val) => sum + (val || 0), 0) : 0
+  })).filter(r => r.commits > 0).sort((a, b) => b.commits - a.commits);
+
+  if (repoData.length === 0) {
+    throw new Error('No data available to generate doughnut chart');
+  }
 
   const width = 1600;
   const height = 800;
@@ -374,16 +405,24 @@ async function generateDoughnutChart(username, platform, datasets, totalCommits,
 }
 
 async function generateRadarChart(username, platform, datasets, totalCommits, filename) {
+  // Import canvas dynamically
+  const { createCanvas } = await import('canvas');
+  
   // Take top 6 repositories for radar chart
   const topRepos = datasets
     .map(ds => ({
       name: ds.label,
-      commits: ds.data.reduce((sum, val) => sum + val, 0),
-      data: ds.data,
-      labels: ds.labels,
+      commits: Array.isArray(ds.data) ? ds.data.reduce((sum, val) => sum + (val || 0), 0) : 0,
+      data: ds.data || [],
+      labels: ds.labels || [],
     }))
+    .filter(r => r.commits > 0)
     .sort((a, b) => b.commits - a.commits)
     .slice(0, 6);
+
+  if (topRepos.length === 0) {
+    throw new Error('No data available to generate radar chart');
+  }
 
   const width = 1600;
   const height = 800;
@@ -444,13 +483,24 @@ async function generateRadarChart(username, platform, datasets, totalCommits, fi
 }
 
 async function generateHeatmap(username, platform, datasets, totalCommits, filename) {
+  // Import canvas dynamically
+  const { createCanvas } = await import('canvas');
+  
   // Aggregate all commits by date
   const commitsByDate = {};
   datasets.forEach(ds => {
-    ds.labels.forEach((date, idx) => {
-      commitsByDate[date] = (commitsByDate[date] || 0) + ds.data[idx];
-    });
+    if (ds.labels && ds.data && Array.isArray(ds.labels) && Array.isArray(ds.data)) {
+      ds.labels.forEach((date, idx) => {
+        if (date && ds.data[idx]) {
+          commitsByDate[date] = (commitsByDate[date] || 0) + ds.data[idx];
+        }
+      });
+    }
   });
+
+  if (Object.keys(commitsByDate).length === 0) {
+    throw new Error('No data available to generate heatmap');
+  }
 
   // Create matrix data for heatmap (last 365 days)
   const today = new Date();
@@ -471,7 +521,7 @@ async function generateHeatmap(username, platform, datasets, totalCommits, filen
     });
   }
 
-  const maxCommits = Math.max(...heatmapData.map(d => d.v));
+  const maxCommits = Math.max(...heatmapData.map(d => d.v), 1); // At least 1 to avoid division by zero
 
   const width = 1600;
   const height = 400;
@@ -488,6 +538,7 @@ async function generateHeatmap(username, platform, datasets, totalCommits, filen
         label: 'Commits',
         data: heatmapData,
         backgroundColor: (ctx) => {
+          if (!ctx || !ctx.raw || ctx.raw.v === undefined) return '#ebedf0';
           const value = ctx.raw.v;
           if (value === 0) return '#ebedf0';
           const intensity = value / maxCommits;
@@ -498,8 +549,14 @@ async function generateHeatmap(username, platform, datasets, totalCommits, filen
         },
         borderWidth: 1,
         borderColor: '#ffffff',
-        width: ({ chart }) => (chart.chartArea || {}).width / 53 - 2,
-        height: ({ chart }) => (chart.chartArea || {}).height / 7 - 2,
+        width: ({ chart }) => {
+          const chartArea = chart.chartArea || { width: 1400 };
+          return Math.max(chartArea.width / 53 - 2, 10);
+        },
+        height: ({ chart }) => {
+          const chartArea = chart.chartArea || { height: 300 };
+          return Math.max(chartArea.height / 7 - 2, 10);
+        },
       }],
     },
     options: {
@@ -520,7 +577,10 @@ async function generateHeatmap(username, platform, datasets, totalCommits, filen
         tooltip: {
           callbacks: {
             title: () => '',
-            label: (ctx) => `${ctx.raw.v} commits`,
+            label: (ctx) => {
+              if (!ctx || !ctx.raw || ctx.raw.v === undefined) return 'No data';
+              return `${ctx.raw.v} commits`;
+            },
           },
         },
         datalabels: {

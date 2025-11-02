@@ -1,17 +1,62 @@
 import fetch from 'node-fetch';
 
 export class GitHubProvider {
-  constructor(username) {
+  constructor(username, token = null) {
     this.username = username;
     this.baseUrl = 'https://api.github.com';
+    // Check for token from constructor, environment variable, or config
+    this.token = token || process.env.GITHUB_TOKEN || null;
+  }
+
+  getHeaders() {
+    const headers = {
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'repo-timeline-cli'
+    };
+    
+    if (this.token) {
+      headers['Authorization'] = `token ${this.token}`;
+    }
+    
+    return headers;
+  }
+
+  async checkRateLimit() {
+    try {
+      const res = await fetch(`${this.baseUrl}/rate_limit`, {
+        headers: this.getHeaders()
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          remaining: data.rate.remaining,
+          limit: data.rate.limit,
+          reset: new Date(data.rate.reset * 1000)
+        };
+      }
+    } catch (error) {
+      // Ignore rate limit check errors
+    }
+    return null;
   }
 
   async fetchRepos() {
     try {
-      const res = await fetch(`${this.baseUrl}/users/${this.username}/repos?per_page=100`);
+      const res = await fetch(`${this.baseUrl}/users/${this.username}/repos?per_page=100`, {
+        headers: this.getHeaders()
+      });
+      
       if (!res.ok) {
         if (res.status === 404) {
           throw new Error(`User '${this.username}' not found on GitHub`);
+        }
+        if (res.status === 403) {
+          const rateLimitInfo = await this.checkRateLimit();
+          if (rateLimitInfo && rateLimitInfo.remaining === 0) {
+            throw new Error(`GitHub rate limit exceeded. Resets at ${rateLimitInfo.reset.toLocaleTimeString()}. Use a GitHub token to increase limit (export GITHUB_TOKEN=your_token)`);
+          }
+          throw new Error(`GitHub API rate limit exceeded. Please wait or use authentication token (export GITHUB_TOKEN=your_token)`);
         }
         throw new Error(`Failed to fetch repos: ${res.statusText}`);
       }
@@ -21,7 +66,7 @@ export class GitHubProvider {
         .filter(r => !r.fork && r.size > 0)
         .map((r) => r.name);
     } catch (error) {
-      if (error.message.includes('not found')) throw error;
+      if (error.message.includes('not found') || error.message.includes('rate limit')) throw error;
       throw new Error(`GitHub API error: ${error.message}`);
     }
   }
@@ -29,12 +74,17 @@ export class GitHubProvider {
   async fetchCommits(repo, page = 1) {
     try {
       const res = await fetch(
-        `${this.baseUrl}/repos/${this.username}/${repo}/commits?per_page=100&page=${page}`
+        `${this.baseUrl}/repos/${this.username}/${repo}/commits?per_page=100&page=${page}`,
+        { headers: this.getHeaders() }
       );
+      
       if (!res.ok) {
         if (res.status === 409) {
           // Empty repository
           return [];
+        }
+        if (res.status === 403) {
+          throw new Error(`rate limit exceeded`);
         }
         throw new Error(`${res.status}: ${res.statusText}`);
       }

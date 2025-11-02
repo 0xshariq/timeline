@@ -1,17 +1,37 @@
 import fetch from 'node-fetch';
 
 export class BitbucketProvider {
-  constructor(username) {
+  constructor(username, appPassword = null) {
     this.username = username;
     this.baseUrl = 'https://api.bitbucket.org/2.0';
+    this.appPassword = appPassword || process.env.BITBUCKET_APP_PASSWORD || null;
+  }
+
+  getHeaders() {
+    const headers = {
+      'Accept': 'application/json',
+      'User-Agent': 'repo-timeline-cli'
+    };
+    
+    if (this.appPassword) {
+      const auth = Buffer.from(`${this.username}:${this.appPassword}`).toString('base64');
+      headers['Authorization'] = `Basic ${auth}`;
+    }
+    
+    return headers;
   }
 
   async fetchRepos() {
     try {
-      const res = await fetch(`${this.baseUrl}/repositories/${this.username}?pagelen=100`);
+      const res = await fetch(`${this.baseUrl}/repositories/${this.username}?pagelen=100`, {
+        headers: this.getHeaders()
+      });
       if (!res.ok) {
         if (res.status === 404) {
           throw new Error(`User '${this.username}' not found on Bitbucket`);
+        }
+        if (res.status === 429) {
+          throw new Error(`Bitbucket rate limit exceeded. Please set BITBUCKET_APP_PASSWORD or wait before retrying`);
         }
         throw new Error(`Failed to fetch repos: ${res.statusText}`);
       }
@@ -20,15 +40,18 @@ export class BitbucketProvider {
         .filter(r => r.size > 0)
         .map((r) => r.slug);
     } catch (error) {
-      if (error.message.includes('not found')) throw error;
+      if (error.message.includes('not found') || error.message.includes('rate limit')) throw error;
       throw new Error(`Bitbucket API error: ${error.message}`);
     }
   }
 
   async fetchCommits(repo, page = null) {
     const url = page || `${this.baseUrl}/repositories/${this.username}/${repo}/commits?pagelen=100`;
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: this.getHeaders() });
     if (!res.ok) {
+      if (res.status === 429) {
+        throw new Error(`rate limit exceeded`);
+      }
       throw new Error(`Failed to fetch commits: ${res.statusText}`);
     }
     return await res.json();
