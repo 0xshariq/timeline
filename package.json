@@ -3,13 +3,9 @@
   "version": "2.0.0",
   "description": "Generate beautiful commit timeline charts for GitHub, GitLab, Bitbucket, and SourceHut repositories with an interactive CLI - supports multiple chart types",
   "main": "src/index.js",
-  "bin": {
-    "timeline": "./src/index.js"
-  },
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node --watch src/index.js"
   },
   "keywords": [
     "git",
@@ -47,6 +43,7 @@
     "chart.js": "^4.4.7",
     "chartjs-chart-matrix": "^2.0.1",
     "chartjs-plugin-datalabels": "^2.2.0",
+    "commander": "^12.1.0",
     "date-fns": "^4.1.0",
     "gradient-string": "^3.0.0",
     "node-fetch": "^3.3.2",
