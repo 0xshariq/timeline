@@ -33,11 +33,20 @@ export async function generateTimeline(platform, username, repos = [], config = 
     if (spinner) {
       spinner.text = chalk.cyan('Fetching repositories...');
     }
-    reposToProcess = await provider.fetchRepos();
     
-    if (verbose) {
-      spinner.info(chalk.blue(`Found ${chalk.bold(reposToProcess.length)} repositories`));
-      spinner.start();
+    try {
+      reposToProcess = await provider.fetchRepos();
+      
+      if (!reposToProcess || reposToProcess.length === 0) {
+        throw new Error(`No repositories found for user '${username}' on ${platform}`);
+      }
+      
+      if (verbose) {
+        spinner.info(chalk.blue(`Found ${chalk.bold(reposToProcess.length)} repositories`));
+        spinner.start();
+      }
+    } catch (error) {
+      throw new Error(`Failed to fetch repositories: ${error.message}`);
     }
   }
 
@@ -45,6 +54,8 @@ export async function generateTimeline(platform, username, repos = [], config = 
   const datasets = [];
   let totalCommits = 0;
   let processedRepos = 0;
+  let skippedRepos = 0;
+  const errors = [];
   
   for (const repo of reposToProcess) {
     processedRepos++;
@@ -55,6 +66,17 @@ export async function generateTimeline(platform, username, repos = [], config = 
     
     try {
       const commits = await provider.fetchAllCommits(repo, config);
+      
+      // Skip repositories with no commits
+      if (!commits || commits.length === 0) {
+        skippedRepos++;
+        if (verbose) {
+          spinner.warn(chalk.yellow(`⚠ Skipped ${chalk.bold(repo)}: No commits found`));
+          spinner.start();
+        }
+        continue;
+      }
+      
       const grouped = groupByDate(commits);
       
       if (grouped.data.length > 0) {
@@ -76,6 +98,9 @@ export async function generateTimeline(platform, username, repos = [], config = 
         }
       }
     } catch (error) {
+      skippedRepos++;
+      errors.push({ repo, error: error.message });
+      
       if (verbose) {
         spinner.warn(chalk.yellow(`⚠ Skipped ${chalk.bold(repo)}: ${error.message}`));
         spinner.start();
@@ -84,7 +109,10 @@ export async function generateTimeline(platform, username, repos = [], config = 
   }
 
   if (datasets.length === 0) {
-    throw new Error('No data to generate chart');
+    if (errors.length > 0) {
+      throw new Error(`No data to generate chart. All repositories failed or are empty.`);
+    }
+    throw new Error('No repositories with commits found');
   }
 
   if (spinner) {
@@ -97,6 +125,9 @@ export async function generateTimeline(platform, username, repos = [], config = 
   if (verbose && spinner) {
     spinner.info(chalk.blue(`Total commits analyzed: ${chalk.bold(totalCommits)}`));
     spinner.info(chalk.blue(`Repositories included: ${chalk.bold(datasets.length)}`));
+    if (skippedRepos > 0) {
+      spinner.info(chalk.yellow(`Skipped repositories: ${chalk.bold(skippedRepos)}`));
+    }
     
     // Show statistics
     const stats = calculateStats(datasets);
