@@ -102,62 +102,190 @@ npx @0xshariq/timeline
 
 ## 💻 How to Use
 
-### Step 1: Launch the CLI
+### Basic Usage
 
 ```bash
-pnpm start
+# Interactive mode (recommended for beginners)
+timeline
+
+# Or with npx (no installation)
+npx @0xshariq/timeline
 ```
 
-You'll see a beautiful gradient banner:
+### Command-Line Flags
 
-```
-╔═══════════════════════════════════════════╗
-║   Repository Timeline Generator 📊        ║
-║   Multi-Platform Git Analytics            ║
-╚═══════════════════════════════════════════╝
-```
+Timeline supports powerful command-line flags for automation:
 
-### Step 2: Select Platform
-
-Choose from 4 supported Git platforms:
-
-```
-? Select Git platform: (Use arrow keys)
-❯ 🐙 GitHub       - Most popular platform
-  🦊 GitLab       - Open source alternative
-  🪣 Bitbucket    - Atlassian product
-  🎯 SourceHut    - Minimal and fast
+```bash
+timeline [options]
+timeline <command> [options]
 ```
 
-### Step 3: Enter Username
+#### Global Options
 
+| Flag | Alias | Description | Example |
+|------|-------|-------------|---------|
+| `-p, --platform <name>` | | Git platform | `-p github` |
+| `-u, --username <name>` | | Username | `-u octocat` |
+| `-r, --repos <list>` | | Comma-separated repos | `-r "repo1,repo2"` |
+| `-a, --all` | | Analyze all repos | `--all` |
+| `-t, --type <type>` | `-c, --chart` | Chart type | `-t line` |
+| `-v, --verbose` | | Show detailed output | `--verbose` |
+| `-q, --quiet` | | Minimal output | `--quiet` |
+| `--no-merge` | | Exclude merge commits | `--no-merge` |
+| `-o, --open` | | Open chart after generation | `--open` |
+| `-V, --version` | | Show version | `--version` |
+| `-h, --help` | | Show help | `--help` |
+
+### Subcommands
+
+#### 1. `generate` - Generate chart (interactive)
+
+```bash
+timeline generate [options]
+
+# Interactive generation with some pre-filled options
+timeline generate -p github -u octocat
 ```
-? Enter username: octocat
-User: octocat
+
+#### 2. `quick` - Quick generation
+
+```bash
+timeline quick -p <platform> -u <username> [options]
+
+# Examples
+timeline quick -p github -u octocat
+timeline quick -p gitlab -u johndoe -t pie
+timeline quick -p bitbucket -u alice --no-merge
 ```
 
-Username validation ensures:
-- Not empty
-- Only letters, numbers, hyphens, underscores
+**Required options:**
+- `-p, --platform` - Platform name
+- `-u, --username` - Username
 
-### Step 4: Choose Repositories
+**Optional:**
+- `-t, --type` - Chart type (default: line)
+- `--no-merge` - Exclude merge commits
 
+#### 3. `platforms` - List platforms
+
+```bash
+timeline platforms
+
+# Output:
+# 📦 Supported Platforms:
+#   🐙 github     - GitHub
+#   🦊 gitlab     - GitLab
+#   🪣 bitbucket  - Bitbucket
+#   🎯 sourcehut  - SourceHut
 ```
-? Analyze all repositories? (Y/n)
+
+#### 4. `charts` - List chart types
+
+```bash
+timeline charts
+
+# Output:
+# 📊 Available Chart Types:
+#   📈 line      - Timeline of commits over time
+#   📊 bar       - Compare commits across repositories
+#   🥧 pie       - Repository contribution percentage
+#   🍩 doughnut  - Like pie chart with center hole
+#   📡 radar     - Multi-dimensional comparison
+#   🔥 heatmap   - Activity calendar (GitHub-style)
 ```
 
-**Option A: All Repositories**
-- Automatically fetches all public repos
-- Best for complete profile analysis
+#### 5. `config` - Show configuration
 
-**Option B: Specific Repositories**
-```
-? Analyze all repositories? No
-? Enter repository names (comma-separated): 
-  repo1, my-project, awesome-tool
+```bash
+timeline config
+
+# Shows package version, Node version, etc.
 ```
 
-### Step 5: Select Chart Type
+#### 6. `examples` - Show usage examples
+
+```bash
+timeline examples
+
+# Displays common usage patterns
+```
+
+### Usage Examples
+
+#### Interactive Mode
+
+```bash
+# Full interactive experience
+timeline
+```
+
+You'll be prompted for:
+
+You'll be prompted for:
+
+1. **Platform Selection** - Choose your Git platform
+2. **Username** - Enter your username
+3. **Repository Selection** - All or specific repos
+4. **Chart Type** - Choose visualization type
+5. **Options** - Verbosity, merge commits, auto-open
+
+#### Quick Commands
+
+```bash
+# GitHub user with line chart (default)
+timeline quick -p github -u octocat
+
+# GitLab user with pie chart
+timeline quick -p gitlab -u johndoe -t pie
+
+# Bitbucket with bar chart, no merge commits
+timeline quick -p bitbucket -u alice -t bar --no-merge
+```
+
+#### With Flags (Skip Prompts)
+
+```bash
+# Specific platform and user
+timeline -p github -u octocat
+
+# All repos with verbose output
+timeline -p github -u octocat --all --verbose
+
+# Specific repos with heatmap
+timeline -p gitlab -u johndoe -r "project1,project2,project3" -t heatmap
+
+# Pie chart, open automatically
+timeline -p bitbucket -u bob --all -t pie --open
+
+# Bar chart without merge commits, quiet mode
+timeline -p github -u charlie --all -t bar --no-merge --quiet
+```
+
+#### Automation & CI/CD
+
+```bash
+# Perfect for scripts and automation
+timeline quick -p github -u $GIT_USERNAME -t line
+
+# Generate multiple charts
+for type in line bar pie; do
+  timeline quick -p github -u octocat -t $type
+done
+
+# Environment variables
+export TIMELINE_PLATFORM=github
+export TIMELINE_USER=octocat
+timeline quick -p $TIMELINE_PLATFORM -u $TIMELINE_USER
+```
+
+### Interactive Workflow
+
+When you run `timeline` in interactive mode:
+
+**Step 1: Platform**
+
+**Step 4: Chart Type**
 
 ```
 ? Select chart type: (Use arrow keys)
@@ -169,7 +297,9 @@ Username validation ensures:
   🔥 Heatmap         - Activity calendar (GitHub-style)
 ```
 
-### Step 6: Configure Options
+**Step 5: Options**
+
+**Step 5: Options**
 
 ```
 ? Select options: (Press space to select)
@@ -178,11 +308,9 @@ Username validation ensures:
   ◯ Open chart after generation
 ```
 
-- **Detailed progress**: Shows each repo processing status
-- **Include merge commits**: Count merge commits in timeline
-- **Auto-open chart**: Opens PNG file after generation
+**Step 6: Processing**
 
-### Step 7: Watch the Magic Happen
+**Step 6: Processing**
 
 ```
 ──────────────────────────────────────────────────
@@ -191,11 +319,12 @@ Username validation ensures:
 ℹ Found 12 repositories
 ✓ my-library: 89 commits
 ✓ cli-tool: 143 commits
+⚠ Skipped empty-repo: No commits found
 ✓ awesome-project: 67 commits
 ...
 ```
 
-### Step 8: View Results
+**Step 7: Results**
 
 **Statistics Summary:**
 ```
