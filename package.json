@@ -2,10 +2,14 @@
   "name": "@0xshariq/timeline",
   "version": "2.0.0",
   "description": "Generate beautiful commit timeline charts for GitHub, GitLab, Bitbucket, and SourceHut repositories with an interactive CLI - supports multiple chart types",
-  "main": "src/index.js",
+  "main": "index.js",
+  "bin": {
+    "timeline": "./index.js"
+  },
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "postinstall": "pnpm rebuild canvas || echo 'Canvas rebuild failed, will auto-fix on first run'"
   },
   "keywords": [
     "git",
