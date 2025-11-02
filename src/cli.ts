@@ -6,7 +6,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 import gradient from 'gradient-string';
 import boxen from 'boxen';
-import { generateTimeline } from './timeline.js';
+import { generateTimeline } from './timeline';
 import { checkCanvasOnStartup } from './utils/canvas-fix.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -31,8 +31,17 @@ function displayBanner() {
   console.log(titleGradient(banner));
 }
 
-async function checkAndPromptForToken(platform) {
-  const tokenConfig = {
+type Platform = 'github' | 'gitlab' | 'bitbucket' | 'sourcehut';
+
+interface TokenConfig {
+  envVar: string;
+  name: string;
+  instructions: string[];
+  limit: string;
+}
+
+async function checkAndPromptForToken(platform: Platform): Promise<void> {
+  const tokenConfig: Record<Platform, TokenConfig> = {
     github: {
       envVar: 'GITHUB_TOKEN',
       name: 'GitHub',
@@ -88,7 +97,7 @@ async function checkAndPromptForToken(platform) {
       chalk.white(`${config.name} API works better with authentication\n`) +
       chalk.gray(`Benefit: ${config.limit}\n\n`) +
       chalk.cyan('How to get a token:\n') +
-      config.instructions.map(i => chalk.gray('  ' + i)).join('\n'),
+      config.instructions.map((i: string) => chalk.gray('  ' + i)).join('\n'),
       {
         padding: 1,
         margin: 0,
@@ -126,7 +135,23 @@ async function checkAndPromptForToken(platform) {
   }
 }
 
-async function interactiveMode(options) {
+type ChartType = 'line' | 'bar' | 'pie' | 'doughnut' | 'radar' | 'heatmap';
+
+interface CommandOptions {
+  platform?: Platform;
+  username?: string;
+  repos?: string;
+  all?: boolean;
+  type?: ChartType;
+  chart?: ChartType;
+  verbose?: boolean;
+  quiet?: boolean;
+  merge?: boolean;
+  noMerge?: boolean;
+  open?: boolean;
+}
+
+async function interactiveMode(options: CommandOptions): Promise<void> {
   displayBanner();
 
   // Check canvas availability and rebuild if needed
@@ -137,34 +162,33 @@ async function interactiveMode(options) {
   }
 
   // Select platform if not provided
-  let platform = options.platform;
-  if (!platform) {
+  let platform: Platform = options.platform || 'github';
+  if (!options.platform) {
     platform = await select({
       message: chalk.cyan('Select Git platform:'),
       choices: [
         {
-          name: chalk.white('🐙 GitHub'),
+          name: chalk.white('GitHub'),
           value: 'github',
           description: 'Most popular platform'
         },
         {
-          name: chalk.white('🦊 GitLab'),
+          name: chalk.white('GitLab'),
           value: 'gitlab',
           description: 'Open source alternative'
         },
         {
-          name: chalk.white('🪣 Bitbucket'),
+          name: chalk.white('Bitbucket'),
           value: 'bitbucket',
           description: 'Atlassian product'
         },
         {
-          name: chalk.white('🎯 SourceHut'),
+          name: chalk.white('SourceHut'),
           value: 'sourcehut',
           description: 'Minimal and fast'
         },
       ],
     });
-    console.log(chalk.gray(`Selected: ${platform}`));
   }
 
   // Check for authentication token based on platform
@@ -184,12 +208,11 @@ async function interactiveMode(options) {
       },
     });
   }
-  console.log(chalk.gray(`User: ${username.trim()}`));
 
   // Ask for specific repos or all
-  let repoList = [];
+  let repoList: string[] = [];
   if (options.repos) {
-    repoList = options.repos.split(',').map(r => r.trim()).filter(r => r);
+    repoList = options.repos.split(',').map((r: string) => r.trim()).filter((r: string) => r);
   } else if (!options.all) {
     const useAllRepos = await confirm({
       message: chalk.cyan('Analyze all repositories?'),
@@ -248,7 +271,7 @@ async function interactiveMode(options) {
   console.log(chalk.gray(`Chart type: ${chartType}`));
 
   // Additional options
-  let optionsList = [];
+  let optionsList: string[] = [];
   if (!options.verbose && !options.quiet && !options.noMerge && !options.open) {
     optionsList = await checkbox({
       message: chalk.cyan('Select options:'),
@@ -294,14 +317,15 @@ async function interactiveMode(options) {
     spinner.succeed(chalk.green('Timeline generated successfully!'));
 
     // Display success message in a box
-    const chartTypeLabel = {
+    const chartTypeLabel: Record<string, string> = {
       line: 'Line Chart',
       bar: 'Bar Chart',
       pie: 'Pie Chart',
       doughnut: 'Doughnut Chart',
       radar: 'Radar Chart',
       heatmap: 'Heatmap'
-    }[chartType] || 'Chart';
+    };
+    const typeLabel = chartTypeLabel[chartType] || 'Chart';
 
     const filename = `timeline-${chartType}.png`;
 
@@ -309,7 +333,7 @@ async function interactiveMode(options) {
       chalk.green.bold('✨ Chart saved as ') +
       chalk.white.bold(filename) +
       chalk.green.bold(' ✨\n\n') +
-      chalk.gray(`Type: ${chartTypeLabel}\n`) +
+      chalk.gray(`Type: ${typeLabel}\n`) +
       chalk.gray('You can find it in the current directory'),
       {
         padding: 1,
@@ -331,7 +355,8 @@ async function interactiveMode(options) {
   } catch (error) {
     spinner.fail(chalk.red('Failed to generate timeline'));
 
-    console.log('\n' + boxen(chalk.red.bold('❌ Error: ') + chalk.white(error.message), {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log('\n' + boxen(chalk.red.bold('❌ Error: ') + chalk.white(errorMessage), {
       padding: 0.5,
       margin: 0.5,
       borderStyle: 'round',
@@ -408,7 +433,7 @@ ${chalk.cyan.bold('More Info:')}
     try {
       await interactiveMode(options);
     } catch (error) {
-      if (error.name === 'ExitPromptError') {
+      if (error instanceof Error && error.name === 'ExitPromptError') {
         console.log('\n' + boxen(chalk.yellow('👋 Cancelled by user'), {
           padding: 0.5,
           margin: 0.5,
@@ -535,6 +560,13 @@ ${chalk.yellow('Note:')} This mode automatically processes all repositories with
   .action(async (options) => {
     displayBanner();
 
+    // Check canvas availability and rebuild if needed
+    try {
+      await checkCanvasOnStartup();
+    } catch (error) {
+      process.exit(1);
+    }
+
     const config = {
       verbose: true,
       includeMerges: options.merge,
@@ -559,7 +591,8 @@ ${chalk.yellow('Note:')} This mode automatically processes all repositories with
       console.log(chalk.green(`\n✨ Chart saved as timeline-${config.chartType}.png\n`));
     } catch (error) {
       spinner.fail(chalk.red('Failed'));
-      console.error(chalk.red(`\n❌ Error: ${error.message}\n`));
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(chalk.red(`\n❌ Error: ${errorMessage}\n`));
       process.exit(1);
     }
   });
@@ -617,20 +650,3 @@ program
   });
 
 program.parse();
-
-// If no command provided, show help
-if (!process.argv.slice(2).length) {
-  interactiveMode({}).catch(error => {
-    if (error.name === 'ExitPromptError') {
-      console.log('\n' + boxen(chalk.yellow('👋 Cancelled by user'), {
-        padding: 0.5,
-        margin: 0.5,
-        borderStyle: 'round',
-        borderColor: 'yellow',
-      }));
-      process.exit(0);
-    }
-    console.error(chalk.red(`\n❌ Error: ${error.message}\n`));
-    process.exit(1);
-  });
-}

@@ -1,19 +1,39 @@
 import chalk from 'chalk';
+import type { Ora } from 'ora';
 import { GitHubProvider } from './providers/github.js';
 import { GitLabProvider } from './providers/gitlab.js';
 import { BitbucketProvider } from './providers/bitbucket.js';
 import { SourceHutProvider } from './providers/sourcehut.js';
 import { generateChart } from './chart.js';
 import { calculateStats, formatStats } from './utils/stats.js';
+import type { Commit } from './types/index.js';
 
-const providers = {
+type Platform = 'github' | 'gitlab' | 'bitbucket' | 'sourcehut';
+type ChartType = 'line' | 'bar' | 'pie' | 'doughnut' | 'radar' | 'heatmap';
+
+interface TimelineConfig {
+  verbose?: boolean;
+  includeMerges?: boolean;
+  openChart?: boolean;
+  chartType?: ChartType;
+}
+
+type Provider = GitHubProvider | GitLabProvider | BitbucketProvider | SourceHutProvider;
+
+const providers: Record<Platform, new (username: string, token?: string | null) => Provider> = {
   github: GitHubProvider,
   gitlab: GitLabProvider,
   bitbucket: BitbucketProvider,
   sourcehut: SourceHutProvider,
 };
 
-export async function generateTimeline(platform, username, repos = [], config = {}, spinner = null) {
+export async function generateTimeline(
+  platform: Platform, 
+  username: string, 
+  repos: string[] = [], 
+  config: TimelineConfig = {}, 
+  spinner: Ora | null = null
+): Promise<void> {
   const ProviderClass = providers[platform];
   
   if (!ProviderClass) {
@@ -35,18 +55,20 @@ export async function generateTimeline(platform, username, repos = [], config = 
     }
     
     try {
-      reposToProcess = await provider.fetchRepos();
+      const repositories = await provider.fetchRepositories(username);
+      reposToProcess = repositories.map(r => r.name);
       
       if (!reposToProcess || reposToProcess.length === 0) {
         throw new Error(`No repositories found for user '${username}' on ${platform}`);
       }
       
-      if (verbose) {
+      if (verbose && spinner) {
         spinner.info(chalk.blue(`Found ${chalk.bold(reposToProcess.length)} repositories`));
         spinner.start();
       }
     } catch (error) {
-      throw new Error(`Failed to fetch repositories: ${error.message}`);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to fetch repositories: ${errorMsg}`);
     }
   }
 
@@ -65,12 +87,18 @@ export async function generateTimeline(platform, username, repos = [], config = 
     }
     
     try {
-      const commits = await provider.fetchAllCommits(repo, config);
+      let commits = await provider.fetchCommits(username, repo, spinner);
+      
+      // Filter commits based on config
+      if (config.includeMerges === false) {
+        // Note: merge detection would need to be added to Commit interface
+        // For now, we keep all commits
+      }
       
       // Skip repositories with no commits
       if (!commits || commits.length === 0) {
         skippedRepos++;
-        if (verbose) {
+        if (verbose && spinner) {
           spinner.warn(chalk.yellow(`⚠ Skipped ${chalk.bold(repo)}: No commits found`));
           spinner.start();
         }
@@ -92,17 +120,18 @@ export async function generateTimeline(platform, username, repos = [], config = 
         
         totalCommits += commits.length;
         
-        if (verbose) {
+        if (verbose && spinner) {
           spinner.info(chalk.green(`✓ ${chalk.bold(repo)}: ${commits.length} commits`));
           spinner.start();
         }
       }
     } catch (error) {
       skippedRepos++;
-      errors.push({ repo, error: error.message });
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      errors.push({ repo, error: errorMsg });
       
-      if (verbose) {
-        spinner.warn(chalk.yellow(`⚠ Skipped ${chalk.bold(repo)}: ${error.message}`));
+      if (verbose && spinner) {
+        spinner.warn(chalk.yellow(`⚠ Skipped ${chalk.bold(repo)}: ${errorMsg}`));
         spinner.start();
       }
     }

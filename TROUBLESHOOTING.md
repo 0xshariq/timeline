@@ -2,9 +2,38 @@
 
 ## Canvas Error: "Cannot find module '../build/Release/canvas.node'"
 
-This error occurs when canvas needs to be rebuilt for your system. The CLI will attempt to auto-rebuild, but if that fails, use these manual solutions.
+This error occurs when canvas needs to be rebuilt for your system. **The CLI automatically rebuilds canvas on every run**, so this should be rare. If you still see this error, it means system dependencies are missing.
 
-### Solution 1: Rebuild Canvas (Recommended)
+### Automatic Rebuild (Built-in)
+
+The timeline tool automatically rebuilds canvas on every execution. You'll see:
+```
+✔ Canvas ready
+```
+
+This happens in the background and ensures canvas works correctly for both local and global installations.
+
+### Manual Solution (If Auto-rebuild Fails)
+
+If the automatic rebuild fails, you likely need to install system dependencies first:
+
+**Ubuntu/Debian:**
+```bash
+sudo apt update
+sudo apt install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+```
+
+**macOS:**
+```bash
+brew install pkg-config cairo pango libpng jpeg giflib librsvg
+```
+
+**Fedora/RHEL:**
+```bash
+sudo dnf install gcc-c++ cairo-devel pango-devel libjpeg-turbo-devel giflib-devel
+```
+
+After installing dependencies, the automatic rebuild should work on next run.
 
 **For pnpm (global installation):**
 ```bash

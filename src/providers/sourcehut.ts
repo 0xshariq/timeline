@@ -1,6 +1,10 @@
 import fetch from 'node-fetch';
 
 export class SourceHutProvider {
+  private username: string;
+  private baseUrl: string;
+  private token: string | null;
+
   constructor(username, token = null) {
     this.username = username;
     this.baseUrl = 'https://git.sr.ht/api';
@@ -36,7 +40,7 @@ export class SourceHutProvider {
         throw new Error(`Failed to fetch repos: ${res.statusText}`);
       }
       const data = await res.json();
-      return data.results
+      return (data as any).results
         .filter(r => r.commits_count && r.commits_count > 0)
         .map((r) => r.name);
     } catch (error) {
@@ -61,7 +65,7 @@ export class SourceHutProvider {
 
   async fetchAllCommits(repo, config = {}) {
     try {
-      const data = await this.fetchCommits(repo);
+      const data = await this.fetchCommits(repo) as any;
       
       if (!data.results) {
         return [];
@@ -75,7 +79,7 @@ export class SourceHutProvider {
       }));
       
       // Filter merge commits if needed (though we can't detect them here)
-      if (config.includeMerges === false) {
+      if ((config as any).includeMerges === false) {
         commits = commits.filter(c => !c.isMerge);
       }
       

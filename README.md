@@ -85,7 +85,7 @@ yarn global rebuild canvas
 timeline
 ```
 
-**Note:** Canvas will automatically try to rebuild on first run if needed. If you still encounter issues, manually rebuild using the commands above or see the [Troubleshooting Guide](TROUBLESHOOTING.md).
+**Note:** Canvas automatically rebuilds on every run to ensure compatibility. This takes a few seconds initially. If you still encounter issues, see the [Troubleshooting Guide](TROUBLESHOOTING.md).
 
 #### Option 2: Install from Source
 

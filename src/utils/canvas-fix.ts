@@ -99,60 +99,47 @@ async function rebuildCanvas(canvasPath) {
 }
 
 export async function ensureCanvasWorks() {
+  // ALWAYS rebuild canvas on every run for reliability
+  const spinner = ora({
+    text: chalk.cyan('Preparing canvas module...'),
+    color: 'cyan',
+  }).start();
+
   try {
-    // Try to import canvas dynamically
-    await import('canvas');
-    return true;
-  } catch (error) {
-    if (error.message.includes('Cannot find module') && error.message.includes('canvas.node')) {
-      const spinner = ora({
-        text: chalk.cyan('Canvas needs rebuilding... Auto-fixing (one-time setup)'),
-        color: 'cyan',
-      }).start();
-
-      try {
-        // Find canvas installation
-        spinner.text = chalk.cyan('Locating canvas module...');
-        const canvasPath = await findCanvasPath();
-        
-        if (!canvasPath) {
-          spinner.fail(chalk.red('Could not locate canvas module'));
-          await installSystemDependencies();
-          throw new Error('Canvas module not found. System dependencies may be missing.');
-        }
-
-        spinner.text = chalk.cyan(`Found canvas at: ${canvasPath.replace(homedir(), '~')}`);
-        await new Promise(resolve => setTimeout(resolve, 500)); // Brief pause
-        
-        // Rebuild canvas
-        spinner.text = chalk.cyan('Rebuilding canvas (this may take a minute)...');
-        const success = await rebuildCanvas(canvasPath);
-        
-        if (!success) {
-          spinner.fail(chalk.red('Auto-rebuild failed'));
-          await installSystemDependencies();
-          throw new Error('Canvas rebuild failed. System dependencies may be missing.');
-        }
-        
-        spinner.succeed(chalk.green('✓ Canvas rebuilt successfully!'));
-        console.log(chalk.gray('  This was a one-time setup. Future runs will be instant.\n'));
-        
-        // Verify import works now
-        try {
-          await import('canvas');
-          return true;
-        } catch (importError) {
-          console.log(chalk.yellow('⚠️  Canvas rebuilt but import still failing.'));
-          await installSystemDependencies();
-          throw new Error('Canvas needs system dependencies. See instructions above.');
-        }
-      } catch (rebuildError) {
-        spinner.fail(chalk.red('Auto-fix failed'));
-        console.log(chalk.yellow('\n⚠️  Automatic fix failed. Trying manual approach...\n'));
-        await installSystemDependencies();
-        throw rebuildError;
-      }
+    // Find canvas installation
+    const canvasPath = await findCanvasPath();
+    
+    if (!canvasPath) {
+      spinner.fail(chalk.red('Could not locate canvas module'));
+      await installSystemDependencies();
+      throw new Error('Canvas module not found. System dependencies may be missing.');
     }
+
+    // Rebuild canvas silently every time
+    spinner.text = chalk.cyan('Rebuilding canvas...');
+    const success = await rebuildCanvas(canvasPath);
+    
+    if (!success) {
+      spinner.fail(chalk.red('Canvas rebuild failed'));
+      await installSystemDependencies();
+      throw new Error('Canvas rebuild failed. System dependencies may be missing.');
+    }
+    
+    spinner.succeed(chalk.green('✓ Canvas ready'));
+    
+    // Verify import works
+    try {
+      await import('canvas');
+      return true;
+    } catch (importError) {
+      console.log(chalk.yellow('⚠️  Canvas rebuilt but import still failing.'));
+      await installSystemDependencies();
+      throw new Error('Canvas needs system dependencies. See instructions above.');
+    }
+  } catch (error) {
+    spinner.fail(chalk.red('Canvas setup failed'));
+    console.log(chalk.yellow('\n⚠️  Canvas setup failed. Please check system dependencies.\n'));
+    await installSystemDependencies();
     throw error;
   }
 }

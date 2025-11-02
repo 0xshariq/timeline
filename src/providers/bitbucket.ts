@@ -1,6 +1,10 @@
 import fetch from 'node-fetch';
 
 export class BitbucketProvider {
+  private username: string;
+  private baseUrl: string;
+  private appPassword: string | null;
+
   constructor(username, appPassword = null) {
     this.username = username;
     this.baseUrl = 'https://api.bitbucket.org/2.0';
@@ -36,7 +40,7 @@ export class BitbucketProvider {
         throw new Error(`Failed to fetch repos: ${res.statusText}`);
       }
       const data = await res.json();
-      return data.values
+      return (data as any).values
         .filter(r => r.size > 0)
         .map((r) => r.slug);
     } catch (error) {
@@ -64,7 +68,7 @@ export class BitbucketProvider {
     
     try {
       while (true) {
-        const data = await this.fetchCommits(repo, nextPage);
+        const data = await this.fetchCommits(repo, nextPage) as any;
         
         if (data.values && data.values.length > 0) {
           allCommits.push(...data.values.map(c => ({
@@ -84,7 +88,7 @@ export class BitbucketProvider {
       }
       
       // Filter merge commits if needed
-      if (config.includeMerges === false) {
+      if ((config as any).includeMerges === false) {
         allCommits = allCommits.filter(c => !c.isMerge);
       }
       

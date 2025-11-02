@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "node index.js",
+    "build": "tsc -p .",
     "dev": "node --watch index.js",
     "postinstall": "pnpm rebuild canvas || echo 'Canvas rebuild failed, will auto-fix on first run'"
   },
@@ -51,9 +52,14 @@
     "date-fns": "^4.1.0",
     "gradient-string": "^3.0.0",
     "node-fetch": "^3.3.2",
-    "ora": "^9.0.0"
+    "ora": "^9.0.0",
+    "typescript": "5.9.3"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/gradient-string": "1.1.6",
+    "@types/node": "24.9.2"
   }
 }
