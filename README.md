@@ -58,6 +58,9 @@ sudo dnf install gcc-c++ cairo-devel pango-devel libjpeg-turbo-devel giflib-deve
 # Install globally
 npm install -g @0xshariq/timeline
 
+# If you get canvas errors, rebuild it:
+npm rebuild canvas -g
+
 # Run anywhere
 timeline
 ```
@@ -65,14 +68,24 @@ timeline
 Or with pnpm:
 ```bash
 pnpm add -g @0xshariq/timeline
+
+# If you get canvas errors:
+pnpm rebuild canvas -g
+
 timeline
 ```
 
 Or with yarn:
 ```bash
 yarn global add @0xshariq/timeline
+
+# If you get canvas errors:
+yarn global rebuild canvas
+
 timeline
 ```
+
+**Note:** Canvas will automatically try to rebuild on first run if needed. If you still encounter issues, manually rebuild using the commands above or see the [Troubleshooting Guide](TROUBLESHOOTING.md).
 
 #### Option 2: Install from Source
 
@@ -101,6 +114,78 @@ npx @0xshariq/timeline
 ---
 
 ## 💻 How to Use
+
+> **🔧 Having issues?** Check the [Troubleshooting Guide](TROUBLESHOOTING.md) for solutions to common problems including canvas errors and rate limits.
+
+### ⚠️ Important: GitHub Authentication (Avoid Rate Limits)
+
+GitHub API has strict rate limits:
+- **Without authentication**: 60 requests/hour ❌ (Will fail for most users!)
+- **With authentication**: 5,000 requests/hour ✅ (Recommended)
+
+#### Step 1: Create a GitHub Personal Access Token
+
+1. Go to **GitHub.com** → Click your profile picture → **Settings**
+2. Scroll down to **Developer settings** (bottom of left sidebar)
+3. Click **Personal access tokens** → **Tokens (classic)**
+4. Click **Generate new token (classic)**
+5. Give it a name (e.g., "timeline-cli")
+6. Select scopes:
+   - ✅ **`public_repo`** (required for public repositories)
+   - ✅ **`repo`** (only if you want to access private repos)
+7. Click **Generate token** at the bottom
+8. **⚠️ Copy the token immediately** (you won't see it again!)
+
+#### Step 2: Set the Token
+
+**Option A: Temporary (Current Session Only)**
+```bash
+export GITHUB_TOKEN=ghp_your_token_here
+timeline -p github -u 0xshariq
+```
+
+**Option B: Permanent (Recommended)**
+
+For **Bash** users (~/.bashrc):
+```bash
+echo 'export GITHUB_TOKEN=ghp_your_token_here' >> ~/.bashrc
+source ~/.bashrc
+```
+
+For **Zsh** users (~/.zshrc):
+```bash
+echo 'export GITHUB_TOKEN=ghp_your_token_here' >> ~/.zshrc
+source ~/.zshrc
+```
+
+For **Fish** users:
+```bash
+set -Ux GITHUB_TOKEN ghp_your_token_here
+```
+
+#### Step 3: Verify It's Working
+
+```bash
+# Check if token is set
+echo $GITHUB_TOKEN
+
+# Test with timeline
+timeline -p github -u 0xshariq --verbose
+```
+
+#### Troubleshooting Rate Limits
+
+**If you still see "403: rate limit exceeded":**
+1. Make sure token is set: `echo $GITHUB_TOKEN`
+2. Verify token has correct permissions on GitHub
+3. Wait for rate limit reset (error shows reset time)
+4. Try with fewer repositories: `timeline -p github -u username -r "repo1,repo2"`
+
+**Security Tips:**
+- Never commit tokens to Git repositories
+- Use minimum required permissions
+- Rotate tokens periodically
+- Revoke unused tokens in GitHub settings
 
 ### Basic Usage
 
