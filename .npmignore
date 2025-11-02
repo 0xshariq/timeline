@@ -1,0 +1,8 @@
+# Don't publish these to npm
+*.png
+node_modules/
+.git/
+.gitignore
+.vscode/
+.idea/
+*.log

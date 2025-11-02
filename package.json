@@ -1,18 +1,58 @@
 {
-  "name": "repo-timeline",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "@0xshariq/timeline",
+  "version": "2.0.0",
+  "description": "Generate beautiful commit timeline charts for GitHub, GitLab, Bitbucket, and SourceHut repositories with an interactive CLI - supports multiple chart types",
+  "main": "src/index.js",
+  "bin": {
+    "timeline": "./src/index.js"
+  },
   "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "git",
+    "timeline",
+    "github",
+    "gitlab",
+    "bitbucket",
+    "sourcehut",
+    "cli",
+    "visualization",
+    "chart",
+    "analytics",
+    "commits",
+    "pie-chart",
+    "bar-chart",
+    "heatmap",
+    "statistics"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xshariq/timeline.git"
+  },
+  "bugs": {
+    "url": "https://github.com/0xshariq/timeline/issues"
+  },
+  "homepage": "https://github.com/0xshariq/timeline#readme",
+  "author": "0xshariq",
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "canvas": "^3.2.0",
-    "chart.js": "^4.5.1",
-    "node-fetch": "^3.3.2"
+    "@inquirer/prompts": "^7.0.1",
+    "boxen": "^8.0.1",
+    "canvas": "^3.0.0",
+    "chalk": "^5.3.0",
+    "chart.js": "^4.4.7",
+    "chartjs-chart-matrix": "^2.0.1",
+    "chartjs-plugin-datalabels": "^2.2.0",
+    "date-fns": "^4.1.0",
+    "gradient-string": "^3.0.0",
+    "node-fetch": "^3.3.2",
+    "ora": "^9.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

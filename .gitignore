@@ -1,1 +1,30 @@
+# Dependencies
 node_modules/
+pnpm-lock.yaml
+
+# Output files
+timeline.png
+*.png
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Environment variables
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build artifacts
+dist/
+build/
