@@ -1,6 +1,6 @@
 {
   "name": "@0xshariq/timeline",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "Generate beautiful commit timeline charts for GitHub, GitLab, Bitbucket, and SourceHut repositories with an interactive CLI - supports multiple chart types",
   "main": "dist/index.js",
   "bin": {
@@ -42,6 +42,7 @@
   "type": "module",
   "dependencies": {
     "@inquirer/prompts": "^7.0.1",
+    "@types/three": "0.181.0",
     "boxen": "^8.0.1",
     "canvas": "^3.0.0",
     "chalk": "^5.3.0",
@@ -53,6 +54,7 @@
     "gradient-string": "^3.0.0",
     "node-fetch": "^3.3.2",
     "ora": "^9.0.0",
+    "three": "0.181.0",
     "typescript": "5.9.3"
   },
   "engines": {
