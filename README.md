@@ -1,6 +1,6 @@
 
-<div align="center">
 # � Repository Timeline Generator
+<div align="center">
 
 ![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)
