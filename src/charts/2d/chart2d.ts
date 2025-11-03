@@ -170,7 +170,7 @@ async function generateLineChart(
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
 
-  new Chart(ctx, {
+  const chart = new Chart(ctx, {
     type: 'line',
     data: {
       labels: allDates,
@@ -188,6 +188,7 @@ async function generateLineChart(
     },
     options: {
       responsive: false,
+      animation: false, // Disable animation for node-canvas
       ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
@@ -253,8 +254,14 @@ async function generateLineChart(
     },
   });
 
+  // Wait a tick for chart to render
+  await new Promise(resolve => setImmediate(resolve));
+  
   const buffer = canvas.toBuffer('image/png');
   fs.writeFileSync(filename, buffer);
+  
+  // Clean up
+  chart.destroy();
 }
 
 async function generateBarChart(
@@ -286,7 +293,7 @@ async function generateBarChart(
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
 
-  new Chart(ctx, {
+  const chart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: repoData.map(r => r.name),
@@ -304,6 +311,7 @@ async function generateBarChart(
     },
     options: {
       responsive: false,
+      animation: false, // Disable animation for node-canvas
       ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
@@ -340,8 +348,14 @@ async function generateBarChart(
     },
   });
 
+  // Wait a tick for chart to render
+  await new Promise(resolve => setImmediate(resolve));
+  
   const buffer = canvas.toBuffer('image/png');
   fs.writeFileSync(filename, buffer);
+  
+  // Clean up
+  chart.destroy();
 }
 
 async function generatePieChart(
@@ -372,7 +386,7 @@ async function generatePieChart(
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
 
-  new Chart(ctx, {
+  const chart = new Chart(ctx, {
     type: 'pie',
     data: {
       labels: repoData.map(r => r.name),
@@ -385,6 +399,7 @@ async function generatePieChart(
     },
     options: {
       responsive: false,
+      animation: false, // Disable animation for node-canvas
       ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
@@ -410,8 +425,14 @@ async function generatePieChart(
     },
   });
 
+  // Wait a tick for chart to render
+  await new Promise(resolve => setImmediate(resolve));
+  
   const buffer = canvas.toBuffer('image/png');
   fs.writeFileSync(filename, buffer);
+  
+  // Clean up
+  chart.destroy();
 }
 
 async function generateDoughnutChart(
@@ -442,7 +463,7 @@ async function generateDoughnutChart(
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
 
-  new Chart(ctx, {
+  const chart = new Chart(ctx, {
     type: 'doughnut',
     data: {
       labels: repoData.map(r => r.name),
@@ -455,6 +476,7 @@ async function generateDoughnutChart(
     },
     options: {
       responsive: false,
+      animation: false, // Disable animation for node-canvas
       ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
@@ -480,8 +502,14 @@ async function generateDoughnutChart(
     },
   });
 
+  // Wait a tick for chart to render
+  await new Promise(resolve => setImmediate(resolve));
+  
   const buffer = canvas.toBuffer('image/png');
   fs.writeFileSync(filename, buffer);
+  
+  // Clean up
+  chart.destroy();
 }
 
 async function generateRadarChart(
