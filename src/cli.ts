@@ -16,13 +16,13 @@ import { dirname, join } from 'path';
 // Import modular CLI components
 import { displayBanner } from './cli/display.js';
 import { checkAndPromptForToken } from './cli/tokens.js';
-import { 
-  promptForPlatform, 
-  promptForUsername, 
-  promptForRepositories, 
+import {
+  promptForPlatform,
+  promptForUsername,
+  promptForRepositories,
   promptForChartType,
   promptForBasicOptions,
-  promptForCustomization 
+  promptForCustomization
 } from './cli/prompts.js';
 import { showPlatforms, showChartTypes, showPackageInfo, showExamples } from './cli/commands.js';
 import type { Platform, ChartType, CommandOptions } from './types/index.js';
@@ -55,9 +55,9 @@ async function interactiveMode(options: CommandOptions): Promise<void> {
   // Use modular prompts  
   const platform = options.platform || savedConfig.defaultPlatform || await promptForPlatform(savedConfig.defaultPlatform);
   await checkAndPromptForToken(platform);
-  
+
   const username = options.username || savedConfig.defaultUsername || await promptForUsername(savedConfig.defaultUsername);
-  
+
   // Handle repositories
   let repoList: string[] = [];
   if (options.repos) {
@@ -66,10 +66,10 @@ async function interactiveMode(options: CommandOptions): Promise<void> {
     const repoResult = await promptForRepositories();
     repoList = repoResult.selectAll ? [] : repoResult.repos;
   }
-  
+
   const chartType = options.chart || options.type || await promptForChartType();
   console.log(`[DEBUG CLI] Selected chart type: ${chartType}`);
-  
+
   const basicOptions = await promptForBasicOptions();
   const customization = await promptForCustomization();
 
@@ -109,7 +109,7 @@ async function interactiveMode(options: CommandOptions): Promise<void> {
     chartType: chartType,
     chartOptions: chartOptions,
   };
-  
+
   console.log(`[DEBUG CLI] Config chartType: ${config.chartType}`);
 
   console.log('\n' + chalk.yellow('━'.repeat(50)) + '\n');
@@ -128,6 +128,7 @@ async function interactiveMode(options: CommandOptions): Promise<void> {
 
     // Display success message in a box
     const chartTypeLabel: Record<string, string> = {
+      // 2D Charts
       line: 'Line Chart',
       bar: 'Bar Chart',
       pie: 'Pie Chart',
@@ -138,8 +139,15 @@ async function interactiveMode(options: CommandOptions): Promise<void> {
       scatter: 'Scatter Chart',
       bubble: 'Bubble Chart',
       mixed: 'Mixed Chart',
+      // 3D Charts
+      line3d: '3D Line Chart',
+      bar3d: '3D Bar Chart',
+      scatter3d: '3D Scatter Chart',
+      surface3d: '3D Surface Chart',
+      bubble3d: '3D Bubble Chart',
     };
     const typeLabel = chartTypeLabel[chartType] || 'Chart';
+    const is3DChart = ['bar3d', 'line3d', 'scatter3d', 'surface3d', 'bubble3d'].includes(chartType);
 
     const filename = `charts/timeline-${chartType}.png`;
 
@@ -147,7 +155,7 @@ async function interactiveMode(options: CommandOptions): Promise<void> {
       chalk.green.bold('✨ Chart saved as ') +
       chalk.white.bold(filename) +
       chalk.green.bold(' ✨\n\n') +
-      chalk.gray(`Type: ${typeLabel}\n`) +
+      chalk.gray(`Type: ${typeLabel}${is3DChart ? ' (Three.js)' : ''}\n`) +
       chalk.gray('You can find it in the charts/ directory'),
       {
         padding: 1,
@@ -167,15 +175,33 @@ async function interactiveMode(options: CommandOptions): Promise<void> {
     }
 
   } catch (error) {
-    spinner.fail(chalk.red('Failed to generate timeline'));
+    if (spinner && spinner.isSpinning) {
+      spinner.fail(chalk.red('Failed to generate timeline'));
+    }
 
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.log('\n' + boxen(chalk.red.bold('❌ Error: ') + chalk.white(errorMessage), {
-      padding: 0.5,
-      margin: 0.5,
-      borderStyle: 'round',
-      borderColor: 'red',
-    }));
+    
+    // Provide helpful error messages
+    let helpText = '';
+    if (errorMessage.includes('No repositories found')) {
+      helpText = '\n' + chalk.yellow('Tip: Make sure the username is correct and has public repositories.');
+    } else if (errorMessage.includes('authentication') || errorMessage.includes('token')) {
+      helpText = '\n' + chalk.yellow('Tip: You may need to set up an API token for private repositories.');
+    } else if (errorMessage.includes('rate limit')) {
+      helpText = '\n' + chalk.yellow('Tip: API rate limit reached. Try again later or use an API token.');
+    } else if (errorMessage.includes('network') || errorMessage.includes('ENOTFOUND')) {
+      helpText = '\n' + chalk.yellow('Tip: Check your internet connection and try again.');
+    }
+    
+    console.log('\n' + boxen(
+      chalk.red.bold('❌ Error: ') + chalk.white(errorMessage) + helpText, 
+      {
+        padding: 0.5,
+        margin: 0.5,
+        borderStyle: 'round',
+        borderColor: 'red',
+      }
+    ));
 
     process.exit(1);
   }
@@ -221,13 +247,20 @@ ${chalk.cyan.bold('Supported Platforms:')}
   ${chalk.white('🪣 bitbucket  - Bitbucket (https://bitbucket.org)')}
   ${chalk.white('🎯 sourcehut  - SourceHut (https://sr.ht)')}
 
-${chalk.cyan.bold('Chart Types:')}
+${chalk.cyan.bold('2D Chart Types:')}
   ${chalk.white('📈 line      - Timeline of commits over time')}
   ${chalk.white('📊 bar       - Compare commits across repositories')}
   ${chalk.white('🥧 pie       - Repository contribution percentage')}
   ${chalk.white('🍩 doughnut  - Like pie chart with center hole')}
   ${chalk.white('📡 radar     - Multi-dimensional comparison')}
   ${chalk.white('🔥 heatmap   - Activity calendar (GitHub-style)')}
+
+${chalk.cyan.bold('3D Chart Types:')}
+  ${chalk.white('🎲 bar3d     - 3D bar chart (Three.js)')}
+  ${chalk.white('📈 line3d    - 3D line chart (Three.js)')}
+  ${chalk.white('🔮 scatter3d - 3D scatter plot (Three.js)')}
+  ${chalk.white('🌊 surface3d - 3D surface chart (Three.js)')}
+  ${chalk.white('💫 bubble3d  - 3D bubble chart (Three.js)')}
 
 ${chalk.cyan.bold('More Info:')}
   Documentation: ${chalk.blue('https://github.com/0xshariq/timeline#readme')}
@@ -237,7 +270,7 @@ ${chalk.cyan.bold('More Info:')}
   .option('-u, --username <username>', 'Username on the platform')
   .option('-r, --repos <repos>', 'Comma-separated repository names')
   .option('-a, --all', 'Analyze all repositories')
-  .option('-t, --type <type>', 'Chart type (line, bar, pie, doughnut, radar, heatmap, polarArea, scatter, bubble, mixed)')
+  .option('-t, --type <type>', 'Chart type (2D: line, bar, pie, doughnut, radar, heatmap, polarArea, scatter, bubble, mixed | 3D: line3d, bar3d, scatter3d, surface3d, bubble3d)')
   .option('-c, --chart <type>', 'Alias for --type')
   .option('-v, --verbose', 'Show detailed progress')
   .option('-q, --quiet', 'Minimal output')
@@ -313,7 +346,7 @@ program
   .description('Quick generation with minimal prompts')
   .requiredOption('-p, --platform <platform>', 'Git platform (github, gitlab, bitbucket, sourcehut)')
   .requiredOption('-u, --username <username>', 'Username on the selected platform')
-  .option('-t, --type <type>', 'Chart type (line, bar, pie, doughnut, radar, heatmap, polarArea, scatter, bubble, mixed)', 'line')
+  .option('-t, --type <type>', 'Chart type (2D: line, bar, pie, doughnut, radar, heatmap, polarArea, scatter, bubble, mixed | 3D: line3d, bar3d, scatter3d, surface3d, bubble3d)', 'line')
   .option('--no-merge', 'Exclude merge commits from analysis')
   .addHelpText('before', chalk.cyan('\nQuick mode for fast, non-interactive chart generation\n'))
   .addHelpText('after', `
@@ -326,6 +359,9 @@ ${chalk.cyan('Examples:')}
 
   ${chalk.gray('# Bar chart without merge commits')}
   $ timeline quick -p bitbucket -u alice -t bar --no-merge
+
+  ${chalk.gray('# 3D bar chart with Three.js')}
+  $ timeline quick -p github -u bob -t bar3d
 
 ${chalk.yellow('Note:')} This mode automatically processes all repositories with default settings.
 `)
@@ -418,16 +454,21 @@ program
       message: chalk.cyan('Default chart type (leave empty to skip):'),
       choices: [
         { name: 'None (ask every time)', value: undefined },
-        { name: 'Line Chart', value: 'line' },
-        { name: 'Bar Chart', value: 'bar' },
-        { name: 'Pie Chart', value: 'pie' },
-        { name: 'Doughnut Chart', value: 'doughnut' },
-        { name: 'Radar Chart', value: 'radar' },
-        { name: 'Heatmap', value: 'heatmap' },
-        { name: 'Polar Area Chart', value: 'polarArea' },
-        { name: 'Scatter Chart', value: 'scatter' },
-        { name: 'Bubble Chart', value: 'bubble' },
-        { name: 'Mixed Chart', value: 'mixed' },
+        { name: '📈 Line Chart', value: 'line' },
+        { name: '📊 Bar Chart', value: 'bar' },
+        { name: '🥧 Pie Chart', value: 'pie' },
+        { name: '🍩 Doughnut Chart', value: 'doughnut' },
+        { name: '📡 Radar Chart', value: 'radar' },
+        { name: '🔥 Heatmap', value: 'heatmap' },
+        { name: '🌸 Polar Area Chart', value: 'polarArea' },
+        { name: '🎯 Scatter Chart', value: 'scatter' },
+        { name: '🫧 Bubble Chart', value: 'bubble' },
+        { name: '📊 Mixed Chart', value: 'mixed' },
+        { name: '🎲 3D Bar Chart', value: 'bar3d' },
+        { name: '📈 3D Line Chart', value: 'line3d' },
+        { name: '🔮 3D Scatter Chart', value: 'scatter3d' },
+        { name: '🌊 3D Surface Chart', value: 'surface3d' },
+        { name: '💫 3D Bubble Chart', value: 'bubble3d' },
       ],
     });
 

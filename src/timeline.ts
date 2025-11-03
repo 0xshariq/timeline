@@ -4,20 +4,9 @@ import { GitHubProvider } from './providers/github.js';
 import { GitLabProvider } from './providers/gitlab.js';
 import { BitbucketProvider } from './providers/bitbucket.js';
 import { SourceHutProvider } from './providers/sourcehut.js';
-import { generateChart } from './chart.js';
+import { generateChart } from './charts/index.js';
 import { calculateStats, formatStats } from './utils/stats.js';
-import type { Commit, ChartCustomization } from './types/index.js';
-
-type Platform = 'github' | 'gitlab' | 'bitbucket' | 'sourcehut';
-type ChartType = 'line' | 'bar' | 'pie' | 'doughnut' | 'radar' | 'heatmap' | 'polarArea' | 'scatter' | 'bubble' | 'mixed';
-
-interface TimelineConfig {
-  verbose?: boolean;
-  includeMerges?: boolean;
-  openChart?: boolean;
-  chartType?: ChartType;
-  chartOptions?: ChartCustomization;
-}
+import type { Commit, ChartCustomization, Platform, ChartType, TimelineConfig } from './types/index.js';
 
 type Provider = GitHubProvider | GitLabProvider | BitbucketProvider | SourceHutProvider;
 
@@ -153,8 +142,36 @@ export async function generateTimeline(
   console.log(`[DEBUG TIMELINE] Received chartType from config: ${config.chartType}`);
   console.log(`[DEBUG TIMELINE] Using chartType: ${chartType}`);
   
+  // Check if it's a 3D chart type
+  const chart3DTypes = ['bar3d', 'line3d', 'scatter3d', 'surface3d', 'bubble3d'];
+  const is3DChart = chart3DTypes.includes(chartType);
+  
+  if (is3DChart && spinner) {
+    spinner.text = chalk.cyan('Generating 3D chart with Three.js...');
+  }
+  
+  // Prepare datasets based on chart type
+  // For 3D charts, ensure datasets have the basic structure needed
+  // The 3D module will handle the transformation as needed
+  const preparedDatasets = is3DChart
+    ? datasets.map(ds => ({
+        label: ds.label,
+        data: ds.data,
+        labels: ds.labels,
+        // 3D charts can use x,y,z coordinates if needed
+        // For now, the 3D module handles the visualization
+      }))
+    : datasets; // 2D charts use the datasets as-is
+  
   // Generate chart and get the filename
-  const outputFile = await generateChart(username, platform, datasets, totalCommits, chartType, config.chartOptions);
+  const outputFile = await generateChart(
+    username, 
+    platform, 
+    preparedDatasets, 
+    totalCommits, 
+    chartType, 
+    config.chartOptions
+  );
   
   if (verbose && spinner) {
     spinner.info(chalk.blue(`Chart saved to: ${chalk.bold(outputFile)}`));

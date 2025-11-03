@@ -1,4 +1,4 @@
-import type { ChartCustomization } from '../types/index.js';
+import type { ChartCustomization } from '../../types/index.js';
 
 /**
  * Default chart customization options

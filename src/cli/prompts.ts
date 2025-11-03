@@ -49,7 +49,14 @@ export async function promptForUsername(defaultUsername?: string): Promise<strin
     message: chalk.cyan('Enter username:'),
     default: defaultUsername || '',
     validate: (value) => {
-      if (value.trim() === '') return 'Username is required';
+      const trimmed = value.trim();
+      if (trimmed === '') return 'Username is required';
+      if (trimmed.length < 1) return 'Username must be at least 1 character';
+      if (trimmed.length > 39) return 'Username must be less than 40 characters';
+      // Basic alphanumeric check with hyphens and underscores
+      if (!/^[a-zA-Z0-9][a-zA-Z0-9-_]*$/.test(trimmed)) {
+        return 'Username must start with a letter or number and contain only letters, numbers, hyphens, or underscores';
+      }
       return true;
     },
   });
@@ -82,7 +89,20 @@ export async function promptForRepositories(): Promise<{ selectAll: boolean; rep
   const reposInput = await input({
     message: chalk.cyan('Enter repository names (comma-separated):'),
     validate: (value) => {
-      if (value.trim() === '') return 'Please enter at least one repository name';
+      const trimmed = value.trim();
+      if (trimmed === '') return 'Please enter at least one repository name';
+      
+      const repos = trimmed.split(',').map(r => r.trim()).filter(r => r.length > 0);
+      if (repos.length === 0) return 'Please enter at least one valid repository name';
+      
+      // Validate each repo name
+      for (const repo of repos) {
+        if (repo.length > 100) return `Repository name "${repo}" is too long`;
+        if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(repo)) {
+          return `Invalid repository name "${repo}". Must contain only letters, numbers, dots, hyphens, or underscores`;
+        }
+      }
+      
       return true;
     },
   });
@@ -92,11 +112,69 @@ export async function promptForRepositories(): Promise<{ selectAll: boolean; rep
 }
 
 /**
+ * Prompt user to select chart dimension (2D or 3D)
+ */
+async function promptForChartDimension(): Promise<'2d' | '3d'> {
+  return await select<'2d' | '3d'>({
+    message: chalk.cyan('Select chart dimension:'),
+    choices: [
+      {
+        name: chalk.white('� 2D Charts'),
+        value: '2d',
+        description: 'Traditional flat charts (Chart.js)'
+      },
+      {
+        name: chalk.white('🎲 3D Charts'),
+        value: '3d',
+        description: 'Interactive 3D visualizations (Three.js)'
+      },
+    ],
+  });
+}
+
+/**
  * Prompt user to select chart type
  */
 export async function promptForChartType(): Promise<ChartType> {
+  // First ask for dimension
+  const dimension = await promptForChartDimension();
+
+  if (dimension === '3d') {
+    return await select<ChartType>({
+      message: chalk.cyan('Select 3D chart type:'),
+      choices: [
+        {
+          name: chalk.white('🎲 3D Bar Chart'),
+          value: 'bar3d',
+          description: '3D bars for impressive visualization'
+        },
+        {
+          name: chalk.white('📈 3D Line Chart'),
+          value: 'line3d',
+          description: '3D timeline visualization'
+        },
+        {
+          name: chalk.white('⚡ 3D Scatter Chart'),
+          value: 'scatter3d',
+          description: '3D scatter plot of commits'
+        },
+        {
+          name: chalk.white('🌊 3D Surface Chart'),
+          value: 'surface3d',
+          description: '3D surface for activity patterns'
+        },
+        {
+          name: chalk.white('💠 3D Bubble Chart'),
+          value: 'bubble3d',
+          description: '3D bubbles with depth'
+        },
+      ],
+    });
+  }
+
+  // 2D charts
   return await select<ChartType>({
-    message: chalk.cyan('Select chart type:'),
+    message: chalk.cyan('Select 2D chart type:'),
     choices: [
       {
         name: chalk.white('📈 Line Chart'),
@@ -104,7 +182,7 @@ export async function promptForChartType(): Promise<ChartType> {
         description: 'Timeline of commits over time'
       },
       {
-        name: chalk.white('📊 Bar Chart'),
+        name: chalk.white('� Bar Chart'),
         value: 'bar',
         description: 'Compare commits across repositories'
       },
@@ -124,7 +202,7 @@ export async function promptForChartType(): Promise<ChartType> {
         description: 'Multi-dimensional comparison'
       },
       {
-        name: chalk.white('🔥 Heatmap'),
+        name: chalk.white('� Heatmap'),
         value: 'heatmap',
         description: 'Activity calendar (GitHub-style)'
       },
@@ -139,7 +217,7 @@ export async function promptForChartType(): Promise<ChartType> {
         description: 'Commit distribution over time'
       },
       {
-        name: chalk.white('💬 Bubble Chart'),
+        name: chalk.white('� Bubble Chart'),
         value: 'bubble',
         description: 'Multi-dimensional with bubble sizes'
       },
@@ -226,6 +304,15 @@ export async function promptForCustomization(): Promise<{
     const colorsInput = await input({
       message: chalk.cyan('Enter hex colors (comma-separated, e.g., #FF5733,#33FF57):'),
       default: '#FF6B6B,#4ECDC4,#45B7D1',
+      validate: (value) => {
+        const colors = value.split(',').map(c => c.trim());
+        for (const color of colors) {
+          if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
+            return `Invalid hex color: ${color}. Use format #RRGGBB (e.g., #FF5733)`;
+          }
+        }
+        return true;
+      },
     });
     colors = colorsInput.split(',').map(c => c.trim());
   } else if (colorChoice === 'gradient') {
@@ -233,10 +320,22 @@ export async function promptForCustomization(): Promise<{
     gradientStart = await input({
       message: chalk.cyan('Gradient start color:'),
       default: '#667eea',
+      validate: (value) => {
+        if (!/^#[0-9A-Fa-f]{6}$/.test(value)) {
+          return `Invalid hex color. Use format #RRGGBB (e.g., #667eea)`;
+        }
+        return true;
+      },
     });
     gradientEnd = await input({
       message: chalk.cyan('Gradient end color:'),
       default: '#764ba2',
+      validate: (value) => {
+        if (!/^#[0-9A-Fa-f]{6}$/.test(value)) {
+          return `Invalid hex color. Use format #RRGGBB (e.g., #764ba2)`;
+        }
+        return true;
+      },
     });
   } else if (colorChoice === 'modern') {
     colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe'];
@@ -271,6 +370,13 @@ export async function promptForCustomization(): Promise<{
     const borderInput = await input({
       message: chalk.cyan('Border width (pixels):'),
       default: '2',
+      validate: (value) => {
+        const num = parseInt(value);
+        if (isNaN(num)) return 'Please enter a valid number';
+        if (num < 0) return 'Border width must be positive';
+        if (num > 20) return 'Border width must be 20 or less';
+        return true;
+      },
     });
     borderWidth = parseInt(borderInput);
   }
@@ -279,6 +385,13 @@ export async function promptForCustomization(): Promise<{
     const labelInput = await input({
       message: chalk.cyan('Label font size (pixels):'),
       default: '12',
+      validate: (value) => {
+        const num = parseInt(value);
+        if (isNaN(num)) return 'Please enter a valid number';
+        if (num < 6) return 'Font size must be at least 6';
+        if (num > 72) return 'Font size must be 72 or less';
+        return true;
+      },
     });
     labelSize = parseInt(labelInput);
   }

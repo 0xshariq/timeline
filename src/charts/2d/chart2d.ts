@@ -23,13 +23,13 @@ import {
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { MatrixController, MatrixElement } from 'chartjs-chart-matrix';
 import fs from 'fs';
-import { getColorByIndex } from './utils/colors.js';
-import { ensureCanvasWorks } from './utils/canvas-fix.js';
-import { mergeChartOptions, getAnimationConfig, getScaleConfig, getLegendConfig, getTooltipConfig } from './utils/chartOptions.js';
-import type { ChartDataset as TimelineChartDataset, ChartType, ChartCustomization } from './types/index.js';
+import { getColorByIndex } from '../../utils/colors.js';
+import { ensureCanvasWorks } from '../../utils/canvas-fix.js';
+import { mergeChartOptions, getAnimationConfig, getScaleConfig, getLegendConfig, getTooltipConfig } from './chartOptions.js';
+import type { ChartDataset as TimelineChartDataset, ChartType, ChartCustomization } from '../../types/index.js';
 
 // Internal render dataset type (timeline datasets include optional labels/data)
-type RenderDataset = {
+export type RenderDataset = {
   label: string;
   labels?: string[];
   data?: number[];

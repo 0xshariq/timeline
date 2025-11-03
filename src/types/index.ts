@@ -8,7 +8,12 @@ export interface TimelineConfig {
   chartOptions?: ChartCustomization;
 }
 
-export type ChartType = 'line' | 'bar' | 'pie' | 'doughnut' | 'radar' | 'heatmap' | 'polarArea' | 'scatter' | 'bubble' | 'mixed';
+export type ChartType = 
+  // 2D Charts
+  | 'line' | 'bar' | 'pie' | 'doughnut' | 'radar' | 'heatmap' 
+  | 'polarArea' | 'scatter' | 'bubble' | 'mixed'
+  // 3D Charts
+  | 'line3d' | 'bar3d' | 'scatter3d' | 'surface3d' | 'bubble3d';
 
 export type MixedChartSubType = 'line' | 'bar';
 

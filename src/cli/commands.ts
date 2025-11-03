@@ -43,6 +43,8 @@ export function showPlatforms(): void {
 export function showChartTypes(): void {
   console.log(chalk.cyan.bold('\n📊 Available Chart Types:\n'));
 
+  console.log(chalk.yellow.bold('2D Charts (Chart.js):\n'));
+
   console.log(chalk.white('  📈 line      - Timeline of commits over time'));
   console.log(chalk.gray('     Best for: Seeing activity patterns and trends'));
   console.log(chalk.gray('     Output: charts/timeline-line.png\n'));
@@ -83,7 +85,29 @@ export function showChartTypes(): void {
   console.log(chalk.gray('     Best for: Comparing different data types'));
   console.log(chalk.gray('     Output: charts/timeline-mixed.png\n'));
 
-  console.log(chalk.gray('Example: timeline -t pie -p github -u octocat'));
+  console.log(chalk.yellow.bold('3D Charts (Three.js):\n'));
+
+  console.log(chalk.white('  🎲 bar3d     - 3D bar chart'));
+  console.log(chalk.gray('     Best for: Impressive 3D visualization'));
+  console.log(chalk.gray('     Output: charts/timeline-bar3d.png\n'));
+
+  console.log(chalk.white('  📈 line3d    - 3D line chart'));
+  console.log(chalk.gray('     Best for: 3D timeline visualization'));
+  console.log(chalk.gray('     Output: charts/timeline-line3d.png\n'));
+
+  console.log(chalk.white('  ⚡ scatter3d - 3D scatter plot'));
+  console.log(chalk.gray('     Best for: 3D distribution analysis'));
+  console.log(chalk.gray('     Output: charts/timeline-scatter3d.png\n'));
+
+  console.log(chalk.white('  🌊 surface3d - 3D surface chart'));
+  console.log(chalk.gray('     Best for: Activity surface patterns'));
+  console.log(chalk.gray('     Output: charts/timeline-surface3d.png\n'));
+
+  console.log(chalk.white('  💠 bubble3d  - 3D bubble chart'));
+  console.log(chalk.gray('     Best for: Multi-dimensional 3D data'));
+  console.log(chalk.gray('     Output: charts/timeline-bubble3d.png\n'));
+
+  console.log(chalk.gray('Example: timeline -t bar3d -p github -u octocat'));
   console.log();
 }
 
