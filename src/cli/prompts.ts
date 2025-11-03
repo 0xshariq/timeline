@@ -18,22 +18,22 @@ export async function promptForPlatform(defaultPlatform?: Platform): Promise<Pla
     message: chalk.cyan('Select Git platform:'),
     choices: [
       {
-        name: chalk.white('🐙 GitHub'),
+        name: chalk.white('GitHub'),
         value: 'github',
         description: 'GitHub.com'
       },
       {
-        name: chalk.white('🦊 GitLab'),
+        name: chalk.white('GitLab'),
         value: 'gitlab',
         description: 'GitLab.com'
       },
       {
-        name: chalk.white('🪣 Bitbucket'),
+        name: chalk.white('Bitbucket'),
         value: 'bitbucket',
         description: 'Bitbucket.org'
       },
       {
-        name: chalk.white('🎯 SourceHut'),
+        name: chalk.white('SourceHut'),
         value: 'sourcehut',
         description: 'sr.ht'
       },
