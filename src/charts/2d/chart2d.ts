@@ -36,6 +36,14 @@ export type RenderDataset = {
   [key: string]: any;
 };
 
+/**
+ * Safely get color from options or fallback to default
+ */
+function getColor(chartOptions: Required<ChartCustomization>, index: number): string {
+  return (chartOptions.colors && chartOptions.colors.length > 0 && chartOptions.colors[index]) 
+    || getColorByIndex(index, 'vibrant');
+}
+
 // Register Chart.js components
 Chart.register(
   LineController,
@@ -167,7 +175,7 @@ async function generateLineChart(
     data: {
       labels: allDates,
       datasets: datasets.map(({ labels, ...rest }: RenderDataset, index: number) => {
-        const color = chartOptions.colors[index] || getColorByIndex(index, 'vibrant');
+        const color = getColor(chartOptions, index);
         return {
           ...rest,
           data: rest.data || [],
@@ -285,8 +293,12 @@ async function generateBarChart(
       datasets: [{
         label: 'Total Commits',
         data: repoData.map(r => r.commits),
-        backgroundColor: repoData.map((_, i) => chartOptions.colors[i] || getColorByIndex(i, 'vibrant')),
-        borderColor: repoData.map((_, i) => chartOptions.colors[i] || getColorByIndex(i, 'vibrant')),
+        backgroundColor: repoData.map((_, i) => 
+          (chartOptions.colors && chartOptions.colors[i]) || getColorByIndex(i, 'vibrant')
+        ),
+        borderColor: repoData.map((_, i) => 
+          (chartOptions.colors && chartOptions.colors[i]) || getColorByIndex(i, 'vibrant')
+        ),
         borderWidth: chartOptions.borderWidth,
       }],
     },
@@ -366,7 +378,7 @@ async function generatePieChart(
       labels: repoData.map(r => r.name),
       datasets: [{
         data: repoData.map(r => r.commits),
-        backgroundColor: repoData.map((_, i) => chartOptions.colors[i] || getColorByIndex(i, 'vibrant')),
+        backgroundColor: repoData.map((_, i) => getColor(chartOptions, i)),
         borderWidth: chartOptions.borderWidth,
         borderColor: '#ffffff',
       }],
@@ -436,7 +448,7 @@ async function generateDoughnutChart(
       labels: repoData.map(r => r.name),
       datasets: [{
         data: repoData.map(r => r.commits),
-        backgroundColor: repoData.map((_, i) => chartOptions.colors[i] || getColorByIndex(i, 'vibrant')),
+        backgroundColor: repoData.map((_, i) => getColor(chartOptions, i)),
         borderWidth: chartOptions.borderWidth,
         borderColor: '#ffffff',
       }],
@@ -734,7 +746,7 @@ async function generatePolarAreaChart(
       labels: repoData.map(r => r.name),
       datasets: [{
         data: repoData.map(r => r.commits),
-        backgroundColor: repoData.map((_, i) => chartOptions.colors[i] || getColorByIndex(i, 'vibrant')),
+        backgroundColor: repoData.map((_, i) => getColor(chartOptions, i)),
         borderWidth: chartOptions.borderWidth,
         borderColor: '#ffffff',
       }],
@@ -799,8 +811,8 @@ async function generateScatterChart(
     return {
       label: ds.label,
       data: points,
-      backgroundColor: chartOptions.colors[index] || getColorByIndex(index, 'vibrant'),
-      borderColor: chartOptions.colors[index] || getColorByIndex(index, 'vibrant'),
+      backgroundColor: getColor(chartOptions, index),
+      borderColor: getColor(chartOptions, index),
       borderWidth: chartOptions.borderWidth,
     };
   });
@@ -896,8 +908,8 @@ async function generateBubbleChart(
     return {
       label: ds.label,
       data: points,
-      backgroundColor: (chartOptions.colors[index] || getColorByIndex(index, 'vibrant')) + '66',
-      borderColor: chartOptions.colors[index] || getColorByIndex(index, 'vibrant'),
+      backgroundColor: getColor(chartOptions, index) + '66',
+      borderColor: getColor(chartOptions, index),
       borderWidth: chartOptions.borderWidth,
     };
   });

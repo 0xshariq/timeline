@@ -1,6 +1,7 @@
 import { input, select, confirm, checkbox } from '@inquirer/prompts';
 import chalk from 'chalk';
 import type { Platform, ChartType, CommandOptions } from '../types/index.js';
+import { defaultChartOptions } from '../charts/2d/chartOptions.js';
 
 /**
  * Interactive prompts for CLI
@@ -270,10 +271,21 @@ export async function promptForCustomization(): Promise<{
   legendPosition?: string;
   advancedOptions?: string[];
 }> {
-  console.log('\n' + chalk.cyan.bold('🎨 Chart Customization'));
+  // Show default customization values
+  console.log('\n' + chalk.cyan.bold('🎨 Default Chart Customization:'));
+  console.log(chalk.gray('━'.repeat(50)));
+  console.log(chalk.white(`  Border Width:     ${chalk.bold(defaultChartOptions.borderWidth + 'px')}`));
+  console.log(chalk.white(`  Label Size:       ${chalk.bold(defaultChartOptions.labelFontSize + 'px')}`));
+  console.log(chalk.white(`  Legend Position:  ${chalk.bold(defaultChartOptions.legendPosition)}`));
+  console.log(chalk.white(`  Colors:           ${chalk.bold('Auto-generated vibrant colors')}`));
+  console.log(chalk.white(`  Animations:       ${chalk.bold(defaultChartOptions.animate ? 'Enabled' : 'Disabled')} (${defaultChartOptions.animationDuration}ms, ${defaultChartOptions.animationEasing})`));
+  console.log(chalk.white(`  Grid Lines:       ${chalk.bold(defaultChartOptions.showGridLines ? 'Visible' : 'Hidden')}`));
+  console.log(chalk.white(`  Scale Type:       ${chalk.bold(defaultChartOptions.scaleType)}`));
+  console.log(chalk.white(`  Tooltips:         ${chalk.bold(defaultChartOptions.showTooltips ? 'Enabled' : 'Disabled')}`));
+  console.log(chalk.gray('━'.repeat(50)));
   
   const wantsCustomization = await confirm({
-    message: chalk.cyan('Do you want to customize the chart appearance?'),
+    message: chalk.cyan('\nDo you want to customize these settings?'),
     default: false,
   });
 
@@ -319,7 +331,7 @@ export async function promptForCustomization(): Promise<{
     useGradient = true;
     gradientStart = await input({
       message: chalk.cyan('Gradient start color:'),
-      default: '#667eea',
+      default: defaultChartOptions.gradientColors.start,
       validate: (value) => {
         if (!/^#[0-9A-Fa-f]{6}$/.test(value)) {
           return `Invalid hex color. Use format #RRGGBB (e.g., #667eea)`;
@@ -329,7 +341,7 @@ export async function promptForCustomization(): Promise<{
     });
     gradientEnd = await input({
       message: chalk.cyan('Gradient end color:'),
-      default: '#764ba2',
+      default: defaultChartOptions.gradientColors.end,
       validate: (value) => {
         if (!/^#[0-9A-Fa-f]{6}$/.test(value)) {
           return `Invalid hex color. Use format #RRGGBB (e.g., #764ba2)`;
@@ -369,7 +381,7 @@ export async function promptForCustomization(): Promise<{
   if (advancedOptions.includes('border')) {
     const borderInput = await input({
       message: chalk.cyan('Border width (pixels):'),
-      default: '2',
+      default: defaultChartOptions.borderWidth.toString(),
       validate: (value) => {
         const num = parseInt(value);
         if (isNaN(num)) return 'Please enter a valid number';
@@ -384,7 +396,7 @@ export async function promptForCustomization(): Promise<{
   if (advancedOptions.includes('labels')) {
     const labelInput = await input({
       message: chalk.cyan('Label font size (pixels):'),
-      default: '12',
+      default: defaultChartOptions.labelFontSize.toString(),
       validate: (value) => {
         const num = parseInt(value);
         if (isNaN(num)) return 'Please enter a valid number';
