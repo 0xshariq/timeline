@@ -1,26 +1,5 @@
-import {
-  Chart,
-  LineController,
-  BarController,
-  PieController,
-  DoughnutController,
-  RadarController,
-  PolarAreaController,
-  ScatterController,
-  BubbleController,
-  LineElement,
-  BarElement,
-  ArcElement,
-  PointElement,
-  RadialLinearScale,
-  LinearScale,
-  CategoryScale,
-  TimeScale,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-// import ChartDataLabels from 'chartjs-plugin-datalabels'; // Commented out - causes segfault with node-canvas
+import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
+import { Chart } from 'chart.js/auto';
 import { MatrixController, MatrixElement } from 'chartjs-chart-matrix';
 import fs from 'fs';
 import { getColorByIndex } from '../../utils/colors.js';
@@ -44,30 +23,22 @@ function getColor(chartOptions: Required<ChartCustomization>, index: number): st
     || getColorByIndex(index, 'vibrant');
 }
 
-// Register Chart.js components
-Chart.register(
-  LineController,
-  BarController,
-  PieController,
-  DoughnutController,
-  RadarController,
-  PolarAreaController,
-  ScatterController,
-  BubbleController,
-  MatrixController,
-  LineElement,
-  BarElement,
-  ArcElement,
-  PointElement,
-  MatrixElement,
-  LinearScale,
-  CategoryScale,
-  RadialLinearScale,
-  TimeScale,
-  Title,
-  Tooltip,
-  Legend
-);
+// Register Chart.js Matrix component for heatmaps
+Chart.register(MatrixController, MatrixElement);
+
+/**
+ * Create a ChartJSNodeCanvas renderer
+ */
+function createChartRenderer(width: number = 1600, height: number = 800) {
+  return new ChartJSNodeCanvas({
+    width,
+    height,
+    backgroundColour: 'white',
+    plugins: {
+      modern: ['chartjs-chart-matrix']
+    }
+  });
+}
 
 export async function generateChart(
   username: string,
@@ -159,17 +130,12 @@ async function generateLineChart(
   const lastDate = allDates[allDates.length - 1];
   const daysDiff = Math.ceil((new Date(lastDate).getTime() - new Date(firstDate).getTime()) / (1000 * 60 * 60 * 24));
 
-  // Canvas setup with better sizing
+  // Create ChartJS renderer
   const width = 1600;
   const height = 800;
-  const canvas = createCanvas(width, height);
-  const ctx: any = canvas.getContext('2d');
+  const chartJSNodeCanvas = createChartRenderer(width, height);
 
-  // Background color
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, width, height);
-
-  const chart = new Chart(ctx, {
+  const configuration: any = {
     type: 'line',
     data: {
       labels: allDates,
@@ -248,16 +214,11 @@ async function generateLineChart(
         intersect: false,
       },
     },
-  });
+  };
 
-  // Wait a tick for chart to render
-  await new Promise(resolve => setImmediate(resolve));
-  
-  const buffer = canvas.toBuffer('image/png');
+  // Render chart to buffer
+  const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
   fs.writeFileSync(filename, buffer);
-  
-  // Clean up
-  chart.destroy();
 }
 
 async function generateBarChart(
@@ -268,9 +229,6 @@ async function generateBarChart(
   filename: string,
   chartOptions: Required<ChartCustomization>
 ): Promise<void> {
-  const canvasModule = (await import('canvas')) as any;
-  const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
-  
   // Calculate total commits per repository
   const repoData = datasets.map(ds => ({
     name: ds.label,
@@ -283,13 +241,9 @@ async function generateBarChart(
 
   const width = 1600;
   const height = 800;
-  const canvas = createCanvas(width, height);
-  const ctx: any = canvas.getContext('2d');
+  const chartJSNodeCanvas = createChartRenderer(width, height);
 
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, width, height);
-
-  const chart = new Chart(ctx, {
+  const configuration: any = {
     type: 'bar',
     data: {
       labels: repoData.map(r => r.name),
@@ -307,7 +261,6 @@ async function generateBarChart(
     },
     options: {
       responsive: false,
-      // Use user's animation preference
       ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
@@ -334,16 +287,10 @@ async function generateBarChart(
         },
       },
     },
-  });
+  };
 
-  // Wait a tick for chart to render
-  await new Promise(resolve => setImmediate(resolve));
-  
-  const buffer = canvas.toBuffer('image/png');
+  const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
   fs.writeFileSync(filename, buffer);
-  
-  // Clean up
-  chart.destroy();
 }
 
 async function generatePieChart(
@@ -354,9 +301,6 @@ async function generatePieChart(
   filename: string,
   chartOptions: Required<ChartCustomization>
 ): Promise<void> {
-  const canvasModule = (await import('canvas')) as any;
-  const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
-  
   const repoData = datasets.map(ds => ({
     name: ds.label,
     commits: Array.isArray(ds.data) ? ds.data.reduce((sum, val) => sum + (val || 0), 0) : 0
@@ -368,13 +312,9 @@ async function generatePieChart(
 
   const width = 1600;
   const height = 800;
-  const canvas = createCanvas(width, height);
-  const ctx: any = canvas.getContext('2d');
+  const chartJSNodeCanvas = createChartRenderer(width, height);
 
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, width, height);
-
-  const chart = new Chart(ctx, {
+  const configuration: any = {
     type: 'pie',
     data: {
       labels: repoData.map(r => r.name),
@@ -387,7 +327,6 @@ async function generatePieChart(
     },
     options: {
       responsive: false,
-      // Use user's animation preference
       ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
@@ -403,16 +342,10 @@ async function generatePieChart(
         tooltip: getTooltipConfig(chartOptions),
       },
     },
-  });
+  };
 
-  // Wait a tick for chart to render
-  await new Promise(resolve => setImmediate(resolve));
-  
-  const buffer = canvas.toBuffer('image/png');
+  const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
   fs.writeFileSync(filename, buffer);
-  
-  // Clean up
-  chart.destroy();
 }
 
 async function generateDoughnutChart(
@@ -423,9 +356,6 @@ async function generateDoughnutChart(
   filename: string,
   chartOptions: Required<ChartCustomization>
 ): Promise<void> {
-  const canvasModule = (await import('canvas')) as any;
-  const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
-  
   const repoData = datasets.map(ds => ({
     name: ds.label,
     commits: Array.isArray(ds.data) ? ds.data.reduce((sum, val) => sum + (val || 0), 0) : 0
@@ -437,13 +367,9 @@ async function generateDoughnutChart(
 
   const width = 1600;
   const height = 800;
-  const canvas = createCanvas(width, height);
-  const ctx: any = canvas.getContext('2d');
+  const chartJSNodeCanvas = createChartRenderer(width, height);
 
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, width, height);
-
-  const chart = new Chart(ctx, {
+  const configuration: any = {
     type: 'doughnut',
     data: {
       labels: repoData.map(r => r.name),
@@ -456,7 +382,6 @@ async function generateDoughnutChart(
     },
     options: {
       responsive: false,
-      // Use user's animation preference
       ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
@@ -472,16 +397,10 @@ async function generateDoughnutChart(
         tooltip: getTooltipConfig(chartOptions),
       },
     },
-  });
+  };
 
-  // Wait a tick for chart to render
-  await new Promise(resolve => setImmediate(resolve));
-  
-  const buffer = canvas.toBuffer('image/png');
+  const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
   fs.writeFileSync(filename, buffer);
-  
-  // Clean up
-  chart.destroy();
 }
 
 async function generateRadarChart(
@@ -492,9 +411,6 @@ async function generateRadarChart(
   filename: string,
   chartOptions: Required<ChartCustomization>
 ): Promise<void> {
-  const canvasModule = (await import('canvas')) as any;
-  const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
-  
   // Take top 6 repositories for radar chart
   const topRepos = datasets
     .map(ds => ({
@@ -513,13 +429,9 @@ async function generateRadarChart(
 
   const width = 1600;
   const height = 800;
-  const canvas = createCanvas(width, height);
-  const ctx: any = canvas.getContext('2d');
+  const chartJSNodeCanvas = createChartRenderer(width, height);
 
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, width, height);
-
-  new Chart(ctx, {
+  const configuration: any = {
     type: 'radar',
     data: {
       labels: topRepos.map(r => r.name),
@@ -552,9 +464,6 @@ async function generateRadarChart(
           display: false,
         },
         tooltip: getTooltipConfig(chartOptions),
-        datalabels: {
-          display: false,
-        },
       },
       scales: {
         r: {
@@ -568,9 +477,9 @@ async function generateRadarChart(
         },
       },
     },
-  });
+  };
 
-  const buffer = canvas.toBuffer('image/png');
+  const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
   fs.writeFileSync(filename, buffer);
 }
 
@@ -624,13 +533,9 @@ async function generateHeatmap(
 
   const width = 1600;
   const height = 400;
-  const canvas = createCanvas(width, height);
-  const ctx: any = canvas.getContext('2d');
+  const chartJSNodeCanvas = createChartRenderer(width, height);
 
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, width, height);
-
-  new Chart(ctx, {
+  const configuration: any = {
     type: 'matrix',
     data: {
       datasets: [{
@@ -706,9 +611,9 @@ async function generateHeatmap(
         },
       },
     },
-  });
+  };
 
-  const buffer = canvas.toBuffer('image/png');
+  const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
   fs.writeFileSync(filename, buffer);
 }
 

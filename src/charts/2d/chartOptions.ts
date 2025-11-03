@@ -18,7 +18,7 @@ export const defaultChartOptions: Required<ChartCustomization> = {
   borderColor: '#ffffff',
   
   // Animations
-  animate: true,
+  animate: false,  // Disabled by default to prevent segfault in node-canvas
   animationDuration: 1000,
   animationEasing: 'easeInOutQuad',
   
