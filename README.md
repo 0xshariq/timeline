@@ -1,6 +1,6 @@
-# � Repository Timeline Generator
 
 <div align="center">
+# � Repository Timeline Generator
 
 ![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)
@@ -8,7 +8,7 @@
 
 **Generate beautiful commit timeline charts for your Git repositories across multiple platforms.**
 
-*Beautiful CLI • Multi-Platform • Interactive • Analytics*
+_Beautiful CLI • Multi-Platform • Interactive • Analytics_
 
 </div>
 
@@ -16,7 +16,8 @@
 
 ## ✨ Features
 
-- 🎨 **Multiple Chart Types** - Line, Bar, Pie, Doughnut, Radar, and Heatmap
+- 🎨 **10 Chart Types** - Line, Bar, Pie, Doughnut, Radar, Heatmap, Polar Area, Scatter, Bubble, and Mixed
+- 🎨 **Full Customization** - Colors, gradients, borders, animations, scales, labels, tooltips, and legends
 - 🌐 **Multi-Platform Support** - GitHub, GitLab, Bitbucket, and SourceHut
 - 💻 **Interactive CLI** - Gradient banners, colored prompts, progress spinners
 - 📊 **Smart Analytics** - Statistics dashboard with top repositories
@@ -25,6 +26,7 @@
 - 🎨 **Color Schemes** - Vibrant, consistent colors for better readability
 - 📈 **Advanced Visualizations** - Heatmaps, contribution patterns, activity analysis
 - 💾 **Export Options** - PNG images with high resolution (1600x800px)
+- ⚙️ **Config Management** - Save default settings (username, platform, chart type)
 
 ---
 
@@ -35,17 +37,20 @@
 Install system dependencies for canvas rendering:
 
 **Ubuntu/Debian:**
+
 ```bash
 sudo apt update
 sudo apt install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
 ```
 
 **macOS:**
+
 ```bash
 brew install pkg-config cairo pango libpng jpeg giflib librsvg
 ```
 
 **Fedora/RHEL:**
+
 ```bash
 sudo dnf install gcc-c++ cairo-devel pango-devel libjpeg-turbo-devel giflib-devel
 ```
@@ -66,6 +71,7 @@ timeline
 ```
 
 Or with pnpm:
+
 ```bash
 pnpm add -g @0xshariq/timeline
 
@@ -76,6 +82,7 @@ timeline
 ```
 
 Or with yarn:
+
 ```bash
 yarn global add @0xshariq/timeline
 
@@ -120,6 +127,7 @@ npx @0xshariq/timeline
 ### ⚠️ Important: GitHub Authentication (Avoid Rate Limits)
 
 GitHub API has strict rate limits:
+
 - **Without authentication**: 60 requests/hour ❌ (Will fail for most users!)
 - **With authentication**: 5,000 requests/hour ✅ (Recommended)
 
@@ -139,6 +147,7 @@ GitHub API has strict rate limits:
 #### Step 2: Set the Token
 
 **Option A: Temporary (Current Session Only)**
+
 ```bash
 export GITHUB_TOKEN=ghp_your_token_here
 timeline -p github -u 0xshariq
@@ -147,18 +156,21 @@ timeline -p github -u 0xshariq
 **Option B: Permanent (Recommended)**
 
 For **Bash** users (~/.bashrc):
+
 ```bash
 echo 'export GITHUB_TOKEN=ghp_your_token_here' >> ~/.bashrc
 source ~/.bashrc
 ```
 
 For **Zsh** users (~/.zshrc):
+
 ```bash
 echo 'export GITHUB_TOKEN=ghp_your_token_here' >> ~/.zshrc
 source ~/.zshrc
 ```
 
 For **Fish** users:
+
 ```bash
 set -Ux GITHUB_TOKEN ghp_your_token_here
 ```
@@ -176,12 +188,14 @@ timeline -p github -u 0xshariq --verbose
 #### Troubleshooting Rate Limits
 
 **If you still see "403: rate limit exceeded":**
+
 1. Make sure token is set: `echo $GITHUB_TOKEN`
 2. Verify token has correct permissions on GitHub
 3. Wait for rate limit reset (error shows reset time)
 4. Try with fewer repositories: `timeline -p github -u username -r "repo1,repo2"`
 
 **Security Tips:**
+
 - Never commit tokens to Git repositories
 - Use minimum required permissions
 - Rotate tokens periodically
@@ -208,32 +222,74 @@ timeline <command> [options]
 
 #### Global Options
 
-| Flag | Alias | Description | Example |
-|------|-------|-------------|---------|
-| `-p, --platform <name>` | | Git platform | `-p github` |
-| `-u, --username <name>` | | Username | `-u octocat` |
-| `-r, --repos <list>` | | Comma-separated repos | `-r "repo1,repo2"` |
-| `-a, --all` | | Analyze all repos | `--all` |
-| `-t, --type <type>` | `-c, --chart` | Chart type | `-t line` |
-| `-v, --verbose` | | Show detailed output | `--verbose` |
-| `-q, --quiet` | | Minimal output | `--quiet` |
-| `--no-merge` | | Exclude merge commits | `--no-merge` |
-| `-o, --open` | | Open chart after generation | `--open` |
-| `-V, --version` | | Show version | `--version` |
-| `-h, --help` | | Show help | `--help` |
+| Flag                    | Alias         | Description                 | Example            |
+| ----------------------- | ------------- | --------------------------- | ------------------ |
+| `-p, --platform <name>` |               | Git platform                | `-p github`        |
+| `-u, --username <name>` |               | Username                    | `-u octocat`       |
+| `-r, --repos <list>`    |               | Comma-separated repos       | `-r "repo1,repo2"` |
+| `-a, --all`             |               | Analyze all repos           | `--all`            |
+| `-t, --type <type>`     | `-c, --chart` | Chart type                  | `-t line`          |
+| `-v, --verbose`         |               | Show detailed output        | `--verbose`        |
+| `-q, --quiet`           |               | Minimal output              | `--quiet`          |
+| `--no-merge`            |               | Exclude merge commits       | `--no-merge`       |
+| `-o, --open`            |               | Open chart after generation | `--open`           |
+| `-V, --version`         |               | Show version                | `--version`        |
+| `-h, --help`            |               | Show help                   | `--help`           |
+
+#### Chart Customization Options
+
+**Colors & Gradients:**
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--colors <colors>` | Custom colors (hex, comma-separated) | `--colors "#FF5733,#33FF57,#3357FF"` |
+| `--gradient` | Enable gradient colors | `--gradient` |
+| `--gradient-start <color>` | Gradient start color | `--gradient-start "#667eea"` |
+| `--gradient-end <color>` | Gradient end color | `--gradient-end "#764ba2"` |
+
+**Borders:**
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--border-width <width>` | Border width (number) | `--border-width 3` |
+| `--border-color <color>` | Border color (hex) | `--border-color "#000000"` |
+
+**Animations:**
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--no-animate` | Disable animations | `--no-animate` |
+| `--animation-duration <ms>` | Animation duration | `--animation-duration 2000` |
+| `--animation-easing <easing>` | Easing function | `--animation-easing "easeInOutCubic"` |
+
+**Scales:**
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--scale-type <type>` | Scale type (linear, logarithmic, time) | `--scale-type logarithmic` |
+| `--no-zero` | Don't begin Y-axis at zero | `--no-zero` |
+| `--no-grid` | Hide grid lines | `--no-grid` |
+
+**Labels & Text:**
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--no-labels` | Hide labels | `--no-labels` |
+| `--label-size <size>` | Label font size | `--label-size 14` |
+| `--label-color <color>` | Label color (hex) | `--label-color "#333333"` |
+
+**Tooltips:**
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--no-tooltips` | Disable tooltips | `--no-tooltips` |
+| `--tooltip-bg <color>` | Tooltip background color | `--tooltip-bg "rgba(0,0,0,0.9)"` |
+
+**Legend:**
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--no-legend` | Hide legend | `--no-legend` |
+| `--legend-position <pos>` | Position (top, bottom, left, right) | `--legend-position right` |
+
+> Refer customization guide [CUSTOMIZATION.md](docs/CUSTOMIZATION.md)
 
 ### Subcommands
 
-#### 1. `generate` - Generate chart (interactive)
-
-```bash
-timeline generate [options]
-
-# Interactive generation with some pre-filled options
-timeline generate -p github -u octocat
-```
-
-#### 2. `quick` - Quick generation
+#### 1. `quick` - Quick generation
 
 ```bash
 timeline quick -p <platform> -u <username> [options]
@@ -245,14 +301,16 @@ timeline quick -p bitbucket -u alice --no-merge
 ```
 
 **Required options:**
+
 - `-p, --platform` - Platform name
 - `-u, --username` - Username
 
 **Optional:**
+
 - `-t, --type` - Chart type (default: line)
 - `--no-merge` - Exclude merge commits
 
-#### 3. `platforms` - List platforms
+#### 2. `platforms` - List platforms
 
 ```bash
 timeline platforms
@@ -265,7 +323,7 @@ timeline platforms
 #   🎯 sourcehut  - SourceHut
 ```
 
-#### 4. `charts` - List chart types
+#### 3. `charts` - List chart types
 
 ```bash
 timeline charts
@@ -280,7 +338,7 @@ timeline charts
 #   🔥 heatmap   - Activity calendar (GitHub-style)
 ```
 
-#### 5. `config` - Show configuration
+#### 4. `config` - Show configuration
 
 ```bash
 timeline config
@@ -288,7 +346,7 @@ timeline config
 # Shows package version, Node version, etc.
 ```
 
-#### 6. `examples` - Show usage examples
+#### 5. `examples` - Show usage examples
 
 ```bash
 timeline examples
@@ -345,6 +403,55 @@ timeline -p bitbucket -u bob --all -t pie --open
 
 # Bar chart without merge commits, quiet mode
 timeline -p github -u charlie --all -t bar --no-merge --quiet
+```
+
+#### Chart Customization Examples
+
+```bash
+# Custom colors (3 repositories with specific colors)
+timeline -p github -u octocat -t bar --colors "#FF5733,#33FF57,#3357FF"
+
+# Gradient colors for line chart
+timeline -p github -u octocat -t line --gradient --gradient-start "#667eea" --gradient-end "#764ba2"
+
+# Thick borders with custom color
+timeline -p github -u octocat -t pie --border-width 5 --border-color "#FF0000"
+
+# No animations for faster generation
+timeline -p github -u octocat -t bar --no-animate
+
+# Logarithmic scale for large value differences
+timeline -p github -u octocat -t line --scale-type logarithmic
+
+# Large labels with custom color
+timeline -p github -u octocat -t bar --label-size 16 --label-color "#FF6B6B"
+
+# No grid lines, no legend for clean look
+timeline -p github -u octocat -t line --no-grid --no-legend
+
+# Right-positioned legend
+timeline -p github -u octocat -t pie --legend-position right
+
+# Combine multiple customizations
+timeline -p github -u octocat -t bar \
+  --colors "#FF6B6B,#4ECDC4,#45B7D1,#FFA07A,#98D8C8" \
+  --border-width 3 \
+  --label-size 14 \
+  --no-grid \
+  --animation-duration 2000
+
+# Perfect for presentations (clean, no tooltips)
+timeline -p github -u octocat -t pie \
+  --colors "#667eea,#764ba2,#f093fb,#4facfe" \
+  --no-tooltips \
+  --label-size 16 \
+  --border-width 0
+
+# Heatmap with custom colors
+timeline -p github -u octocat -t heatmap \
+  --gradient \
+  --gradient-start "#9be9a8" \
+  --gradient-end "#216e39"
 ```
 
 #### Automation & CI/CD
@@ -412,6 +519,7 @@ When you run `timeline` in interactive mode:
 **Step 7: Results**
 
 **Statistics Summary:**
+
 ```
 📊 Statistics Summary
 ─────────────────────
@@ -430,6 +538,7 @@ Average per Day: 1.29 commits
 ```
 
 **Success Message:**
+
 ```
 ╭─────────────────────────────────────────────╮
 │                                             │
@@ -444,18 +553,19 @@ Average per Day: 1.29 commits
 
 ## 🌐 Supported Platforms
 
-| Platform | Support | API Version | Rate Limit |
-|----------|---------|-------------|------------|
-| **GitHub** 🐙 | ✅ Full | REST v3 | 60/hour |
-| **GitLab** 🦊 | ✅ Full | REST v4 | 10/sec |
-| **Bitbucket** 🪣 | ✅ Full | API 2.0 | Varies |
-| **SourceHut** 🎯 | ✅ Full | GraphQL | Check docs |
+| Platform         | Support | API Version | Rate Limit |
+| ---------------- | ------- | ----------- | ---------- |
+| **GitHub** 🐙    | ✅ Full | REST v3     | 60/hour    |
+| **GitLab** 🦊    | ✅ Full | REST v4     | 10/sec     |
+| **Bitbucket** 🪣 | ✅ Full | API 2.0     | Varies     |
+| **SourceHut** 🎯 | ✅ Full | GraphQL     | Check docs |
 
 ### Increase Rate Limits (Optional)
 
 Add authentication tokens to provider files for higher limits:
 
 **GitHub** (`src/providers/github.js`):
+
 ```javascript
 async fetchRepos() {
   const res = await fetch(`${this.baseUrl}/users/${this.username}/repos`, {
@@ -466,6 +576,7 @@ async fetchRepos() {
 ```
 
 **GitLab** (`src/providers/gitlab.js`):
+
 ```javascript
 headers: { 'PRIVATE-TOKEN': 'YOUR_GITLAB_TOKEN' }
 ```
@@ -479,9 +590,11 @@ headers: { 'PRIVATE-TOKEN': 'YOUR_GITLAB_TOKEN' }
 ### Available Chart Types
 
 #### 📈 Line Chart (Default)
+
 **Best for:** Timeline analysis, trend visualization
 
 **Output:** `timeline-line.png`
+
 ```
 • Shows commit frequency over time
 • Multiple repositories as different colored lines
@@ -490,9 +603,11 @@ headers: { 'PRIVATE-TOKEN': 'YOUR_GITLAB_TOKEN' }
 ```
 
 #### 📊 Bar Chart
+
 **Best for:** Repository comparison, total commits
 
 **Output:** `timeline-bar.png`
+
 ```
 • Compares total commits across repositories
 • Each bar represents a different repository
@@ -501,9 +616,11 @@ headers: { 'PRIVATE-TOKEN': 'YOUR_GITLAB_TOKEN' }
 ```
 
 #### 🥧 Pie Chart
+
 **Best for:** Contribution percentage, repository share
 
 **Output:** `timeline-pie.png`
+
 ```
 • Shows percentage of commits per repository
 • Visual breakdown of contribution distribution
@@ -512,9 +629,11 @@ headers: { 'PRIVATE-TOKEN': 'YOUR_GITLAB_TOKEN' }
 ```
 
 #### 🍩 Doughnut Chart
+
 **Best for:** Similar to pie but with modern look
 
 **Output:** `timeline-doughnut.png`
+
 ```
 • Same as pie chart with center hole
 • More modern and aesthetic design
@@ -523,9 +642,11 @@ headers: { 'PRIVATE-TOKEN': 'YOUR_GITLAB_TOKEN' }
 ```
 
 #### 📡 Radar Chart
+
 **Best for:** Multi-dimensional comparison
 
 **Output:** `timeline-radar.png`
+
 ```
 • Compares repositories across multiple metrics
 • Shows commits, contributors, activity patterns
@@ -534,15 +655,73 @@ headers: { 'PRIVATE-TOKEN': 'YOUR_GITLAB_TOKEN' }
 ```
 
 #### 🔥 Heatmap (GitHub-style)
+
 **Best for:** Daily activity patterns, contribution calendar
 
 **Output:** `timeline-heatmap.png`
+
 ```
 • GitHub-style contribution calendar
 • Each cell represents a day
 • Color intensity shows commit frequency
 • Week rows, day columns (365 days)
 • Perfect for seeing work patterns
+```
+
+#### 🎯 Polar Area Chart
+
+**Best for:** Circular data visualization, radial comparison
+
+**Output:** `timeline-polarArea.png`
+
+```
+• Radial representation of repository data
+• Similar to pie chart but with radius variation
+• Shows both proportion and magnitude
+• Beautiful circular design
+• Great for presentations
+```
+
+#### ⚡ Scatter Chart
+
+**Best for:** Finding patterns, outlier detection, distribution analysis
+
+**Output:** `timeline-scatter.png`
+
+```
+• Plots individual commits over time
+• Shows commit distribution patterns
+• Identifies activity clusters and gaps
+• Great for detecting unusual patterns
+• X-axis: time, Y-axis: commits
+```
+
+#### 💬 Bubble Chart
+
+**Best for:** Multi-dimensional data with three variables
+
+**Output:** `timeline-bubble.png`
+
+```
+• Like scatter but with bubble sizes
+• Shows repository size, activity, and time
+• Bubble size represents commit count
+• Perfect for complex relationships
+• Multiple dimensions in one chart
+```
+
+#### 🎨 Mixed Chart
+
+**Best for:** Combining different chart types, complex comparisons
+
+**Output:** `timeline-mixed.png`
+
+```
+• Combines line and bar charts
+• Show different data types together
+• Compare trends and totals
+• Highly customizable
+• Professional analytics appearance
 ```
 
 ### Generated Chart Features
@@ -587,14 +766,14 @@ repo-timeline/
 
 ### Visual Components
 
-| Feature | Description |
-|---------|-------------|
-| 🎨 Gradient Banners | Eye-catching startup screen |
-| 🌈 Colored Prompts | Cyan questions, gray feedback |
-| ⏳ Progress Spinners | Real-time animated feedback |
-| 📦 Styled Boxes | Important messages in frames |
-| ✓ Status Icons | Success (✓), Info (ℹ), Warning (⚠) |
-| 🎯 Emoji Indicators | Visual context throughout |
+| Feature              | Description                        |
+| -------------------- | ---------------------------------- |
+| 🎨 Gradient Banners  | Eye-catching startup screen        |
+| 🌈 Colored Prompts   | Cyan questions, gray feedback      |
+| ⏳ Progress Spinners | Real-time animated feedback        |
+| 📦 Styled Boxes      | Important messages in frames       |
+| ✓ Status Icons       | Success (✓), Info (ℹ), Warning (⚠) |
+| 🎯 Emoji Indicators  | Visual context throughout          |
 
 ### Interactive Options
 
@@ -620,11 +799,12 @@ pnpm run dev  # Auto-reload on file changes
 ### Adding New Platforms
 
 1. **Create Provider** (`src/providers/newplatform.js`):
+
 ```javascript
 export class NewPlatformProvider {
   constructor(username) {
     this.username = username;
-    this.baseUrl = 'https://api.newplatform.com';
+    this.baseUrl = "https://api.newplatform.com";
   }
 
   async fetchRepos() {
@@ -639,8 +819,9 @@ export class NewPlatformProvider {
 ```
 
 2. **Register in Timeline** (`src/timeline.js`):
+
 ```javascript
-import { NewPlatformProvider } from './providers/newplatform.js';
+import { NewPlatformProvider } from "./providers/newplatform.js";
 
 const providers = {
   // ...existing
@@ -649,63 +830,32 @@ const providers = {
 ```
 
 3. **Add to CLI Menu** (`src/index.js`):
+
 ```javascript
 choices: [
   // ...existing
-  { name: '🎯 NewPlatform', value: 'newplatform' },
-]
+  { name: "🎯 NewPlatform", value: "newplatform" },
+];
 ```
 
 ### Dependencies
 
-| Package | Purpose |
-|---------|---------|
+| Package             | Purpose                 |
+| ------------------- | ----------------------- |
 | `@inquirer/prompts` | Interactive CLI prompts |
-| `chalk` | Terminal styling |
-| `ora` | Progress spinners |
-| `boxen` | Terminal boxes |
-| `gradient-string` | Gradient text |
-| `chart.js` | Chart generation |
-| `canvas` | Node canvas renderer |
-| `node-fetch` | HTTP requests |
+| `chalk`             | Terminal styling        |
+| `ora`               | Progress spinners       |
+| `boxen`             | Terminal boxes          |
+| `gradient-string`   | Gradient text           |
+| `chart.js`          | Chart generation        |
+| `canvas`            | Node canvas renderer    |
+| `node-fetch`        | HTTP requests           |
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Canvas Build Errors
-
-```bash
-# Clear cache and rebuild
-pnpm cache clean
-pnpm install canvas --force
-```
-
-### API Rate Limits
-
-**Symptoms:**
-- "Failed to fetch repos" errors
-- Incomplete data
-
-**Solutions:**
-1. Add authentication tokens (see [Increase Rate Limits](#increase-rate-limits-optional))
-2. Reduce number of repositories
-3. Wait for rate limit reset
-
-### No Data Found
-
-**Check:**
-- Username exists on platform
-- Repositories are public (or add auth)
-- Repositories have commits
-- Network connection is stable
-
-### Chart Not Generated
-
-**Verify:**
-- Canvas dependencies installed correctly
-- Sufficient disk space
-- Write permissions in current directory
+> Refer the troubleshooting guide [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 
 ---
 
@@ -767,6 +917,7 @@ Contributions welcome! Ideas:
 ## 🙏 Acknowledgments
 
 Built with amazing open-source tools:
+
 - [Chart.js](https://www.chartjs.org/) - Powerful charting
 - [Inquirer](https://github.com/SBoudrias/Inquirer.js) - Beautiful prompts
 - [Chalk](https://github.com/chalk/chalk) - Terminal styling
@@ -778,6 +929,6 @@ Built with amazing open-source tools:
 
 **Made with ❤️ and ☕**
 
-*Happy Analyzing!* 🚀
+_Happy Analyzing!_ 🚀
 
 </div>

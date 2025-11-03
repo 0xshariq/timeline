@@ -1,13 +1,63 @@
 import type { Ora } from 'ora';
 
 export interface TimelineConfig {
-  verbose: boolean;
-  includeMerges: boolean;
-  openChart: boolean;
-  chartType: ChartType;
+  verbose?: boolean;
+  includeMerges?: boolean;
+  openChart?: boolean;
+  chartType?: ChartType;
+  chartOptions?: ChartCustomization;
 }
 
-export type ChartType = 'line' | 'bar' | 'pie' | 'doughnut' | 'radar' | 'heatmap';
+export type ChartType = 'line' | 'bar' | 'pie' | 'doughnut' | 'radar' | 'heatmap' | 'polarArea' | 'scatter' | 'bubble' | 'mixed';
+
+export type MixedChartSubType = 'line' | 'bar';
+
+export interface ChartCustomization {
+  // Colors and Gradients
+  colors?: string[];
+  useGradient?: boolean;
+  gradientColors?: {
+    start: string;
+    end: string;
+  };
+  
+  // Borders
+  borderWidth?: number;
+  borderColor?: string | string[];
+  
+  // Animations
+  animate?: boolean;
+  animationDuration?: number;
+  animationEasing?: 'linear' | 'easeInQuad' | 'easeOutQuad' | 'easeInOutQuad' | 'easeInCubic' | 'easeOutCubic' | 'easeInOutCubic';
+  
+  // Scales
+  scaleType?: 'linear' | 'logarithmic' | 'time';
+  beginAtZero?: boolean;
+  showGridLines?: boolean;
+  
+  // Labels and Text
+  showLabels?: boolean;
+  labelFontSize?: number;
+  labelColor?: string;
+  
+  // Tooltips
+  showTooltips?: boolean;
+  tooltipBackgroundColor?: string;
+  
+  // Legend
+  showLegend?: boolean;
+  legendPosition?: 'top' | 'bottom' | 'left' | 'right';
+  
+  // Plugins
+  enableExport?: boolean;
+  enableAnnotations?: boolean;
+  enableZoom?: boolean;
+  
+  // Mixed Chart specific
+  mixedChartTypes?: {
+    [datasetLabel: string]: MixedChartSubType;
+  };
+}
 
 export type Platform = 'github' | 'gitlab' | 'bitbucket' | 'sourcehut';
 
@@ -65,5 +115,30 @@ export interface CommandOptions {
   verbose?: boolean;
   quiet?: boolean;
   merge?: boolean;
+  noMerge?: boolean;
   open?: boolean;
+  // Chart Customization Options
+  colors?: string;
+  gradient?: boolean;
+  gradientStart?: string;
+  gradientEnd?: string;
+  borderWidth?: number;
+  borderColor?: string;
+  animate?: boolean;
+  animationDuration?: number;
+  animationEasing?: string;
+  scaleType?: string;
+  zero?: boolean;
+  grid?: boolean;
+  labels?: boolean;
+  labelSize?: number;
+  labelColor?: string;
+  tooltips?: boolean;
+  tooltipBg?: string;
+  legend?: boolean;
+  legendPosition?: string;
+  // Plugins
+  exportEnabled?: boolean;
+  annotationsEnabled?: boolean;
+  zoomEnabled?: boolean;
 }

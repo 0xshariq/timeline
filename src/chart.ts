@@ -5,6 +5,9 @@ import {
   PieController,
   DoughnutController,
   RadarController,
+  PolarAreaController,
+  ScatterController,
+  BubbleController,
   LineElement,
   BarElement,
   ArcElement,
@@ -12,6 +15,7 @@ import {
   RadialLinearScale,
   LinearScale,
   CategoryScale,
+  TimeScale,
   Title,
   Tooltip,
   Legend,
@@ -21,7 +25,8 @@ import { MatrixController, MatrixElement } from 'chartjs-chart-matrix';
 import fs from 'fs';
 import { getColorByIndex } from './utils/colors.js';
 import { ensureCanvasWorks } from './utils/canvas-fix.js';
-import type { ChartDataset as TimelineChartDataset, ChartType } from './types/index.js';
+import { mergeChartOptions, getAnimationConfig, getScaleConfig, getLegendConfig, getTooltipConfig } from './utils/chartOptions.js';
+import type { ChartDataset as TimelineChartDataset, ChartType, ChartCustomization } from './types/index.js';
 
 // Internal render dataset type (timeline datasets include optional labels/data)
 type RenderDataset = {
@@ -38,6 +43,9 @@ Chart.register(
   PieController,
   DoughnutController,
   RadarController,
+  PolarAreaController,
+  ScatterController,
+  BubbleController,
   MatrixController,
   LineElement,
   BarElement,
@@ -47,6 +55,7 @@ Chart.register(
   LinearScale,
   CategoryScale,
   RadialLinearScale,
+  TimeScale,
   Title,
   Tooltip,
   Legend,
@@ -58,35 +67,63 @@ export async function generateChart(
   platform: string,
   datasets: RenderDataset[] | TimelineChartDataset[],
   totalCommits = 0,
-  chartType: ChartType | string = 'line'
-): Promise<void> {
+  chartType: ChartType | string = 'line',
+  customization?: ChartCustomization
+): Promise<string> {
   // Ensure canvas is working before generating charts
   await ensureCanvasWorks();
 
-  const filename = `timeline-${chartType}.png`;
+  // Merge user customization with defaults
+  const chartOptions = mergeChartOptions(customization);
+
+  // Create charts directory if it doesn't exist
+  const chartsDir = 'charts';
+  if (!fs.existsSync(chartsDir)) {
+    fs.mkdirSync(chartsDir, { recursive: true });
+  }
+
+  const filename = `${chartsDir}/timeline-${chartType}.png`;
+
+  // IMPORTANT: Use the actual chartType parameter, not hardcoded 'line'
+  console.log(`[DEBUG] Generating ${chartType} chart...`);
 
   switch (chartType) {
     case 'line':
-      await generateLineChart(username, platform, datasets as RenderDataset[], totalCommits, filename);
+      await generateLineChart(username, platform, datasets as RenderDataset[], totalCommits, filename, chartOptions);
       break;
     case 'bar':
-      await generateBarChart(username, platform, datasets as RenderDataset[], totalCommits, filename);
+      await generateBarChart(username, platform, datasets as RenderDataset[], totalCommits, filename, chartOptions);
       break;
     case 'pie':
-      await generatePieChart(username, platform, datasets as RenderDataset[], totalCommits, filename);
+      await generatePieChart(username, platform, datasets as RenderDataset[], totalCommits, filename, chartOptions);
       break;
     case 'doughnut':
-      await generateDoughnutChart(username, platform, datasets as RenderDataset[], totalCommits, filename);
+      await generateDoughnutChart(username, platform, datasets as RenderDataset[], totalCommits, filename, chartOptions);
       break;
     case 'radar':
-      await generateRadarChart(username, platform, datasets as RenderDataset[], totalCommits, filename);
+      await generateRadarChart(username, platform, datasets as RenderDataset[], totalCommits, filename, chartOptions);
       break;
     case 'heatmap':
-      await generateHeatmap(username, platform, datasets as RenderDataset[], totalCommits, filename);
+      await generateHeatmap(username, platform, datasets as RenderDataset[], totalCommits, filename, chartOptions);
+      break;
+    case 'polarArea':
+      await generatePolarAreaChart(username, platform, datasets as RenderDataset[], totalCommits, filename, chartOptions);
+      break;
+    case 'scatter':
+      await generateScatterChart(username, platform, datasets as RenderDataset[], totalCommits, filename, chartOptions);
+      break;
+    case 'bubble':
+      await generateBubbleChart(username, platform, datasets as RenderDataset[], totalCommits, filename, chartOptions);
+      break;
+    case 'mixed':
+      await generateMixedChart(username, platform, datasets as RenderDataset[], totalCommits, filename, chartOptions);
       break;
     default:
-      await generateLineChart(username, platform, datasets as RenderDataset[], totalCommits, filename);
+      console.log(`[WARN] Unknown chart type '${chartType}', falling back to line chart`);
+      await generateLineChart(username, platform, datasets as RenderDataset[], totalCommits, filename, chartOptions);
   }
+  
+  return filename;
 }
 
 async function generateLineChart(
@@ -94,7 +131,8 @@ async function generateLineChart(
   platform: string,
   datasets: RenderDataset[],
   totalCommits: number,
-  filename: string
+  filename: string,
+  chartOptions: Required<ChartCustomization>
 ): Promise<void> {
   // Import canvas dynamically (typed as any to avoid canvas-specific types here)
   const canvasModule = (await import('canvas')) as any;
@@ -128,18 +166,24 @@ async function generateLineChart(
     type: 'line',
     data: {
       labels: allDates,
-      datasets: datasets.map(({ labels, ...rest }: RenderDataset, index: number) => ({
-        ...rest,
-        data: rest.data || [],
-        borderColor: getColorByIndex(index, 'vibrant'),
-        backgroundColor: getColorByIndex(index, 'vibrant') + '33', // Add transparency
-      })),
+      datasets: datasets.map(({ labels, ...rest }: RenderDataset, index: number) => {
+        const color = chartOptions.colors[index] || getColorByIndex(index, 'vibrant');
+        return {
+          ...rest,
+          data: rest.data || [],
+          borderColor: color,
+          backgroundColor: color + '33', // Add transparency
+          borderWidth: chartOptions.borderWidth,
+          tension: 0.3,
+        };
+      }),
     },
     options: {
       responsive: false,
+      ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
-          display: true,
+          display: chartOptions.showLabels,
           text: [
             `${username}'s ${platform.charAt(0).toUpperCase() + platform.slice(1)} Commit Timeline`,
             `${totalCommits} commits across ${datasets.length} repositories (${daysDiff} days)`
@@ -150,32 +194,15 @@ async function generateLineChart(
           },
           padding: 20,
         },
-        legend: {
-          display: datasets.length <= 15,
-          position: 'bottom',
-          labels: {
-            boxWidth: 12,
-            padding: 15,
-            font: {
-              size: 11,
-            },
-          },
-        },
-        tooltip: {
-          mode: 'index',
-          intersect: false,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          padding: 12,
-          titleFont: {
-            size: 14,
-          },
-          bodyFont: {
-            size: 12,
-          },
+        legend: getLegendConfig({ ...chartOptions, showLegend: datasets.length <= 15 && chartOptions.showLegend }),
+        tooltip: getTooltipConfig(chartOptions),
+        datalabels: {
+          display: false,
         },
       },
       scales: {
         x: {
+          ...getScaleConfig(chartOptions, 'x'),
           title: { 
             display: true, 
             text: 'Date',
@@ -191,11 +218,9 @@ async function generateLineChart(
               size: 10,
             },
           },
-          grid: {
-            color: 'rgba(0, 0, 0, 0.05)',
-          },
         },
         y: {
+          ...getScaleConfig(chartOptions, 'y'),
           title: { 
             display: true, 
             text: 'Number of Commits',
@@ -204,15 +229,11 @@ async function generateLineChart(
               weight: 'bold',
             },
           },
-          beginAtZero: true,
           ticks: {
             precision: 0,
             font: {
               size: 11,
             },
-          },
-          grid: {
-            color: 'rgba(0, 0, 0, 0.1)',
           },
         },
       },
@@ -233,7 +254,8 @@ async function generateBarChart(
   platform: string,
   datasets: RenderDataset[],
   totalCommits: number,
-  filename: string
+  filename: string,
+  chartOptions: Required<ChartCustomization>
 ): Promise<void> {
   const canvasModule = (await import('canvas')) as any;
   const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
@@ -263,16 +285,17 @@ async function generateBarChart(
       datasets: [{
         label: 'Total Commits',
         data: repoData.map(r => r.commits),
-        backgroundColor: repoData.map((_, i) => getColorByIndex(i, 'vibrant')),
-        borderColor: repoData.map((_, i) => getColorByIndex(i, 'vibrant')),
-        borderWidth: 2,
+        backgroundColor: repoData.map((_, i) => chartOptions.colors[i] || getColorByIndex(i, 'vibrant')),
+        borderColor: repoData.map((_, i) => chartOptions.colors[i] || getColorByIndex(i, 'vibrant')),
+        borderWidth: chartOptions.borderWidth,
       }],
     },
     options: {
       responsive: false,
+      ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
-          display: true,
+          display: chartOptions.showLabels,
           text: `${username}'s ${platform.charAt(0).toUpperCase() + platform.slice(1)} Commit Comparison`,
           font: { size: 18, weight: 'bold' },
           padding: 20,
@@ -280,21 +303,25 @@ async function generateBarChart(
         legend: {
           display: false,
         },
+        tooltip: getTooltipConfig(chartOptions),
         datalabels: {
+          display: chartOptions.showLabels,
           anchor: 'end',
           align: 'top',
           formatter: (value) => value,
-          font: { weight: 'bold', size: 11 },
+          font: { weight: 'bold', size: chartOptions.labelFontSize },
+          color: chartOptions.labelColor,
         },
       },
       scales: {
         x: {
+          ...getScaleConfig(chartOptions, 'x'),
           title: { display: true, text: 'Repository', font: { size: 14, weight: 'bold' } },
           ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 45 },
         },
         y: {
+          ...getScaleConfig(chartOptions, 'y'),
           title: { display: true, text: 'Total Commits', font: { size: 14, weight: 'bold' } },
-          beginAtZero: true,
           ticks: { precision: 0, font: { size: 11 } },
         },
       },
@@ -310,7 +337,8 @@ async function generatePieChart(
   platform: string,
   datasets: RenderDataset[],
   totalCommits: number,
-  filename: string
+  filename: string,
+  chartOptions: Required<ChartCustomization>
 ): Promise<void> {
   const canvasModule = (await import('canvas')) as any;
   const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
@@ -338,16 +366,17 @@ async function generatePieChart(
       labels: repoData.map(r => r.name),
       datasets: [{
         data: repoData.map(r => r.commits),
-        backgroundColor: repoData.map((_, i) => getColorByIndex(i, 'vibrant')),
-        borderWidth: 2,
+        backgroundColor: repoData.map((_, i) => chartOptions.colors[i] || getColorByIndex(i, 'vibrant')),
+        borderWidth: chartOptions.borderWidth,
         borderColor: '#ffffff',
       }],
     },
     options: {
       responsive: false,
+      ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
-          display: true,
+          display: chartOptions.showLabels,
           text: [
             `${username}'s ${platform.charAt(0).toUpperCase() + platform.slice(1)} Contribution Distribution`,
             `${totalCommits} total commits across ${datasets.length} repositories`
@@ -355,13 +384,11 @@ async function generatePieChart(
           font: { size: 18, weight: 'bold' },
           padding: 20,
         },
-        legend: {
-          position: 'right',
-          labels: { boxWidth: 15, padding: 10, font: { size: 11 } },
-        },
+        legend: getLegendConfig({ ...chartOptions, legendPosition: 'right' }),
+        tooltip: getTooltipConfig(chartOptions),
         datalabels: {
           color: '#fff',
-          font: { weight: 'bold', size: 12 },
+          font: { weight: 'bold', size: chartOptions.labelFontSize },
           formatter: (value, ctx) => {
             const percentage = ((value / totalCommits) * 100).toFixed(1);
             return parseFloat(percentage) > 3 ? `${percentage}%` : '';
@@ -380,7 +407,8 @@ async function generateDoughnutChart(
   platform: string,
   datasets: RenderDataset[],
   totalCommits: number,
-  filename: string
+  filename: string,
+  chartOptions: Required<ChartCustomization>
 ): Promise<void> {
   const canvasModule = (await import('canvas')) as any;
   const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
@@ -408,16 +436,17 @@ async function generateDoughnutChart(
       labels: repoData.map(r => r.name),
       datasets: [{
         data: repoData.map(r => r.commits),
-        backgroundColor: repoData.map((_, i) => getColorByIndex(i, 'vibrant')),
-        borderWidth: 2,
+        backgroundColor: repoData.map((_, i) => chartOptions.colors[i] || getColorByIndex(i, 'vibrant')),
+        borderWidth: chartOptions.borderWidth,
         borderColor: '#ffffff',
       }],
     },
     options: {
       responsive: false,
+      ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
-          display: true,
+          display: chartOptions.showLabels,
           text: [
             `${username}'s ${platform.charAt(0).toUpperCase() + platform.slice(1)} Repository Breakdown`,
             `${totalCommits} commits • ${datasets.length} repositories`
@@ -425,13 +454,11 @@ async function generateDoughnutChart(
           font: { size: 18, weight: 'bold' },
           padding: 20,
         },
-        legend: {
-          position: 'right',
-          labels: { boxWidth: 15, padding: 10, font: { size: 11 } },
-        },
+        legend: getLegendConfig({ ...chartOptions, legendPosition: 'right' }),
+        tooltip: getTooltipConfig(chartOptions),
         datalabels: {
           color: '#fff',
-          font: { weight: 'bold', size: 12 },
+          font: { weight: 'bold', size: chartOptions.labelFontSize },
           formatter: (value, ctx) => {
             const percentage = ((value / totalCommits) * 100).toFixed(1);
             return parseFloat(percentage) > 3 ? `${percentage}%` : '';
@@ -450,7 +477,8 @@ async function generateRadarChart(
   platform: string,
   datasets: RenderDataset[],
   totalCommits: number,
-  filename: string
+  filename: string,
+  chartOptions: Required<ChartCustomization>
 ): Promise<void> {
   const canvasModule = (await import('canvas')) as any;
   const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
@@ -486,20 +514,21 @@ async function generateRadarChart(
       datasets: [{
         label: 'Commits',
         data: topRepos.map(r => r.commits),
-        backgroundColor: getColorByIndex(0, 'vibrant') + '33',
-        borderColor: getColorByIndex(0, 'vibrant'),
-        borderWidth: 2,
-        pointBackgroundColor: getColorByIndex(0, 'vibrant'),
+        backgroundColor: (chartOptions.colors[0] || getColorByIndex(0, 'vibrant')) + '33',
+        borderColor: chartOptions.colors[0] || getColorByIndex(0, 'vibrant'),
+        borderWidth: chartOptions.borderWidth,
+        pointBackgroundColor: chartOptions.colors[0] || getColorByIndex(0, 'vibrant'),
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: getColorByIndex(0, 'vibrant'),
+        pointHoverBorderColor: chartOptions.colors[0] || getColorByIndex(0, 'vibrant'),
       }],
     },
     options: {
       responsive: false,
+      ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
-          display: true,
+          display: chartOptions.showLabels,
           text: [
             `${username}'s ${platform.charAt(0).toUpperCase() + platform.slice(1)} Repository Comparison`,
             `Top ${topRepos.length} repositories by commits`
@@ -510,15 +539,19 @@ async function generateRadarChart(
         legend: {
           display: false,
         },
+        tooltip: getTooltipConfig(chartOptions),
+        datalabels: {
+          display: false,
+        },
       },
       scales: {
         r: {
-          beginAtZero: true,
+          beginAtZero: chartOptions.beginAtZero,
           ticks: {
             font: { size: 11 },
           },
           pointLabels: {
-            font: { size: 12, weight: 'bold' },
+            font: { size: chartOptions.labelFontSize, weight: 'bold' },
           },
         },
       },
@@ -534,7 +567,8 @@ async function generateHeatmap(
   platform: string,
   datasets: RenderDataset[],
   totalCommits: number,
-  filename: string
+  filename: string,
+  chartOptions: Required<ChartCustomization>
 ): Promise<void> {
   const canvasModule = (await import('canvas')) as any;
   const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
@@ -614,9 +648,10 @@ async function generateHeatmap(
     },
     options: {
       responsive: false,
+      ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
-          display: true,
+          display: chartOptions.showLabels,
           text: [
             `${username}'s ${platform.charAt(0).toUpperCase() + platform.slice(1)} Activity Heatmap`,
             `Last 365 days • ${totalCommits} total commits`
@@ -627,16 +662,7 @@ async function generateHeatmap(
         legend: {
           display: false,
         },
-        tooltip: {
-          callbacks: {
-            title: () => '',
-            label: (ctx: any) => {
-              const v = ctx?.raw?.v;
-              if (v === undefined) return 'No data';
-              return `${v} commits`;
-            },
-          },
-        },
+        tooltip: getTooltipConfig(chartOptions),
         datalabels: {
           display: false,
         },
@@ -666,6 +692,384 @@ async function generateHeatmap(
             display: false,
           },
         },
+      },
+    },
+  });
+
+  const buffer = canvas.toBuffer('image/png');
+  fs.writeFileSync(filename, buffer);
+}
+
+async function generatePolarAreaChart(
+  username: string,
+  platform: string,
+  datasets: RenderDataset[],
+  totalCommits: number,
+  filename: string,
+  chartOptions: Required<ChartCustomization>
+): Promise<void> {
+  const canvasModule = (await import('canvas')) as any;
+  const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
+  
+  const repoData = datasets.map(ds => ({
+    name: ds.label,
+    commits: Array.isArray(ds.data) ? ds.data.reduce((sum, val) => sum + (val || 0), 0) : 0
+  })).filter(r => r.commits > 0).sort((a, b) => b.commits - a.commits);
+
+  if (repoData.length === 0) {
+    throw new Error('No data available to generate polar area chart');
+  }
+
+  const width = 1600;
+  const height = 800;
+  const canvas = createCanvas(width, height);
+  const ctx: any = canvas.getContext('2d');
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  new Chart(ctx, {
+    type: 'polarArea',
+    data: {
+      labels: repoData.map(r => r.name),
+      datasets: [{
+        data: repoData.map(r => r.commits),
+        backgroundColor: repoData.map((_, i) => chartOptions.colors[i] || getColorByIndex(i, 'vibrant')),
+        borderWidth: chartOptions.borderWidth,
+        borderColor: '#ffffff',
+      }],
+    },
+    options: {
+      responsive: false,
+      ...getAnimationConfig(chartOptions),
+      plugins: {
+        title: {
+          display: chartOptions.showLabels,
+          text: [
+            `${username}'s ${platform.charAt(0).toUpperCase() + platform.slice(1)} Repository Activity`,
+            `${totalCommits} total commits across ${datasets.length} repositories`
+          ],
+          font: { size: 18, weight: 'bold' },
+          padding: 20,
+        },
+        legend: getLegendConfig({ ...chartOptions, legendPosition: 'right' }),
+        tooltip: getTooltipConfig(chartOptions),
+        datalabels: {
+          color: '#fff',
+          font: { weight: 'bold', size: chartOptions.labelFontSize },
+          formatter: (value, ctx) => {
+            const percentage = ((value / totalCommits) * 100).toFixed(1);
+            return parseFloat(percentage) > 3 ? `${percentage}%` : '';
+          },
+        },
+      },
+      scales: {
+        r: {
+          beginAtZero: chartOptions.beginAtZero,
+          ticks: {
+            display: chartOptions.showGridLines,
+          },
+        },
+      },
+    },
+  });
+
+  const buffer = canvas.toBuffer('image/png');
+  fs.writeFileSync(filename, buffer);
+}
+
+async function generateScatterChart(
+  username: string,
+  platform: string,
+  datasets: RenderDataset[],
+  totalCommits: number,
+  filename: string,
+  chartOptions: Required<ChartCustomization>
+): Promise<void> {
+  const canvasModule = (await import('canvas')) as any;
+  const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
+  
+  // Convert timeline data to scatter points
+  const scatterData = datasets.map((ds, index) => {
+    const points = (ds.labels || []).map((date, i) => ({
+      x: new Date(date).getTime(),
+      y: ds.data?.[i] || 0,
+    }));
+    
+    return {
+      label: ds.label,
+      data: points,
+      backgroundColor: chartOptions.colors[index] || getColorByIndex(index, 'vibrant'),
+      borderColor: chartOptions.colors[index] || getColorByIndex(index, 'vibrant'),
+      borderWidth: chartOptions.borderWidth,
+    };
+  });
+
+  if (scatterData.length === 0) {
+    throw new Error('No data available to generate scatter chart');
+  }
+
+  const width = 1600;
+  const height = 800;
+  const canvas = createCanvas(width, height);
+  const ctx: any = canvas.getContext('2d');
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: scatterData,
+    },
+    options: {
+      responsive: false,
+      ...getAnimationConfig(chartOptions),
+      plugins: {
+        title: {
+          display: chartOptions.showLabels,
+          text: [
+            `${username}'s ${platform.charAt(0).toUpperCase() + platform.slice(1)} Commit Scatter Plot`,
+            `${totalCommits} commits across ${datasets.length} repositories`
+          ],
+          font: { size: 18, weight: 'bold' },
+          padding: 20,
+        },
+        legend: getLegendConfig({ ...chartOptions, showLegend: datasets.length <= 10 && chartOptions.showLegend }),
+        tooltip: getTooltipConfig(chartOptions),
+        datalabels: {
+          display: false,
+        },
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            unit: 'day',
+          },
+          title: {
+            display: true,
+            text: 'Date',
+            font: { size: 14, weight: 'bold' },
+          },
+          grid: {
+            display: chartOptions.showGridLines,
+          },
+        },
+        y: {
+          ...getScaleConfig(chartOptions, 'y'),
+          title: {
+            display: true,
+            text: 'Commits',
+            font: { size: 14, weight: 'bold' },
+          },
+        },
+      },
+    },
+  });
+
+  const buffer = canvas.toBuffer('image/png');
+  fs.writeFileSync(filename, buffer);
+}
+
+async function generateBubbleChart(
+  username: string,
+  platform: string,
+  datasets: RenderDataset[],
+  totalCommits: number,
+  filename: string,
+  chartOptions: Required<ChartCustomization>
+): Promise<void> {
+  const canvasModule = (await import('canvas')) as any;
+  const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
+  
+  // Convert timeline data to bubble points
+  // x = date, y = commits that day, r = total commits in repo
+  const bubbleData = datasets.map((ds, index) => {
+    const totalRepoCommits = Array.isArray(ds.data) ? ds.data.reduce((sum, val) => sum + (val || 0), 0) : 0;
+    const points = (ds.labels || []).map((date, i) => ({
+      x: new Date(date).getTime(),
+      y: ds.data?.[i] || 0,
+      r: Math.max(5, Math.min(20, totalRepoCommits / 10)), // Scale bubble size
+    }));
+    
+    return {
+      label: ds.label,
+      data: points,
+      backgroundColor: (chartOptions.colors[index] || getColorByIndex(index, 'vibrant')) + '66',
+      borderColor: chartOptions.colors[index] || getColorByIndex(index, 'vibrant'),
+      borderWidth: chartOptions.borderWidth,
+    };
+  });
+
+  if (bubbleData.length === 0) {
+    throw new Error('No data available to generate bubble chart');
+  }
+
+  const width = 1600;
+  const height = 800;
+  const canvas = createCanvas(width, height);
+  const ctx: any = canvas.getContext('2d');
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  new Chart(ctx, {
+    type: 'bubble',
+    data: {
+      datasets: bubbleData,
+    },
+    options: {
+      responsive: false,
+      ...getAnimationConfig(chartOptions),
+      plugins: {
+        title: {
+          display: chartOptions.showLabels,
+          text: [
+            `${username}'s ${platform.charAt(0).toUpperCase() + platform.slice(1)} Commit Bubble Chart`,
+            `${totalCommits} commits • Bubble size represents repository activity`
+          ],
+          font: { size: 18, weight: 'bold' },
+          padding: 20,
+        },
+        legend: getLegendConfig({ ...chartOptions, showLegend: datasets.length <= 10 && chartOptions.showLegend }),
+        tooltip: getTooltipConfig(chartOptions),
+        datalabels: {
+          display: false,
+        },
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            unit: 'day',
+          },
+          title: {
+            display: true,
+            text: 'Date',
+            font: { size: 14, weight: 'bold' },
+          },
+          grid: {
+            display: chartOptions.showGridLines,
+          },
+        },
+        y: {
+          ...getScaleConfig(chartOptions, 'y'),
+          title: {
+            display: true,
+            text: 'Commits',
+            font: { size: 14, weight: 'bold' },
+          },
+        },
+      },
+    },
+  });
+
+  const buffer = canvas.toBuffer('image/png');
+  fs.writeFileSync(filename, buffer);
+}
+
+async function generateMixedChart(
+  username: string,
+  platform: string,
+  datasets: RenderDataset[],
+  totalCommits: number,
+  filename: string,
+  chartOptions: Required<ChartCustomization>
+): Promise<void> {
+  const canvasModule = (await import('canvas')) as any;
+  const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
+  
+  // Merge all labels (unique sorted dates)
+  const allDates = [
+    ...new Set(datasets.flatMap((d) => d.labels || [])),
+  ].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
+  if (allDates.length === 0) {
+    throw new Error('No data available to generate mixed chart');
+  }
+
+  const width = 1600;
+  const height = 800;
+  const canvas = createCanvas(width, height);
+  const ctx: any = canvas.getContext('2d');
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  // Create mixed type datasets - alternate between line and bar
+  const mixedDatasets = datasets.map(({ labels, ...rest }: RenderDataset, index: number) => {
+    const chartType = chartOptions.mixedChartTypes[rest.label] || (index % 2 === 0 ? 'line' : 'bar');
+    const color = chartOptions.colors[index] || getColorByIndex(index, 'vibrant');
+    
+    return {
+      ...rest,
+      type: chartType,
+      data: rest.data || [],
+      borderColor: color,
+      backgroundColor: chartType === 'line' ? color + '33' : color,
+      borderWidth: chartOptions.borderWidth,
+      tension: 0.3,
+      fill: chartType === 'line' ? false : true,
+    };
+  });
+
+  new Chart(ctx, {
+    type: 'line', // Base type
+    data: {
+      labels: allDates,
+      datasets: mixedDatasets as any,
+    },
+    options: {
+      responsive: false,
+      ...getAnimationConfig(chartOptions),
+      plugins: {
+        title: {
+          display: chartOptions.showLabels,
+          text: [
+            `${username}'s ${platform.charAt(0).toUpperCase() + platform.slice(1)} Mixed Commit Chart`,
+            `${totalCommits} commits across ${datasets.length} repositories`
+          ],
+          font: { size: 18, weight: 'bold' },
+          padding: 20,
+        },
+        legend: getLegendConfig({ ...chartOptions, showLegend: datasets.length <= 15 && chartOptions.showLegend }),
+        tooltip: getTooltipConfig(chartOptions),
+        datalabels: {
+          display: false,
+        },
+      },
+      scales: {
+        x: {
+          ...getScaleConfig(chartOptions, 'x'),
+          title: {
+            display: true,
+            text: 'Date',
+            font: { size: 14, weight: 'bold' },
+          },
+          ticks: {
+            maxRotation: 45,
+            minRotation: 45,
+            font: { size: 10 },
+          },
+        },
+        y: {
+          ...getScaleConfig(chartOptions, 'y'),
+          title: {
+            display: true,
+            text: 'Number of Commits',
+            font: { size: 14, weight: 'bold' },
+          },
+          ticks: {
+            precision: 0,
+            font: { size: 11 },
+          },
+        },
+      },
+      interaction: {
+        mode: 'nearest',
+        axis: 'x',
+        intersect: false,
       },
     },
   });

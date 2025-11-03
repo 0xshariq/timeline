@@ -6,16 +6,17 @@ import { BitbucketProvider } from './providers/bitbucket.js';
 import { SourceHutProvider } from './providers/sourcehut.js';
 import { generateChart } from './chart.js';
 import { calculateStats, formatStats } from './utils/stats.js';
-import type { Commit } from './types/index.js';
+import type { Commit, ChartCustomization } from './types/index.js';
 
 type Platform = 'github' | 'gitlab' | 'bitbucket' | 'sourcehut';
-type ChartType = 'line' | 'bar' | 'pie' | 'doughnut' | 'radar' | 'heatmap';
+type ChartType = 'line' | 'bar' | 'pie' | 'doughnut' | 'radar' | 'heatmap' | 'polarArea' | 'scatter' | 'bubble' | 'mixed';
 
 interface TimelineConfig {
   verbose?: boolean;
   includeMerges?: boolean;
   openChart?: boolean;
   chartType?: ChartType;
+  chartOptions?: ChartCustomization;
 }
 
 type Provider = GitHubProvider | GitLabProvider | BitbucketProvider | SourceHutProvider;
@@ -42,6 +43,7 @@ export async function generateTimeline(
 
   const provider = new ProviderClass(username);
   const verbose = config.verbose !== false;
+  const chartType = config.chartType || 'line';  // Default to 'line' if not specified
 
   if (spinner) {
     spinner.text = chalk.cyan(`Connecting to ${platform}...`);
@@ -148,10 +150,14 @@ export async function generateTimeline(
     spinner.text = chalk.cyan('Generating chart...');
   }
   
-  // Generate chart
-  await generateChart(username, platform, datasets, totalCommits, config.chartType || 'line');
+  console.log(`[DEBUG TIMELINE] Received chartType from config: ${config.chartType}`);
+  console.log(`[DEBUG TIMELINE] Using chartType: ${chartType}`);
+  
+  // Generate chart and get the filename
+  const outputFile = await generateChart(username, platform, datasets, totalCommits, chartType, config.chartOptions);
   
   if (verbose && spinner) {
+    spinner.info(chalk.blue(`Chart saved to: ${chalk.bold(outputFile)}`));
     spinner.info(chalk.blue(`Total commits analyzed: ${chalk.bold(totalCommits)}`));
     spinner.info(chalk.blue(`Repositories included: ${chalk.bold(datasets.length)}`));
     if (skippedRepos > 0) {
