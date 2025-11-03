@@ -86,7 +86,8 @@ async function rebuildCanvas(canvasPath) {
         cwd: canvasPath,
         timeout: 120000, // 2 minutes
         shell: '/bin/bash',
-        stdio: 'pipe'
+        // 'stdio' is not a valid option for child_process.exec; use maxBuffer to control output size
+        maxBuffer: 1024 * 1024 * 1024 // 1GB
       });
       return true; // Success!
     } catch (error) {

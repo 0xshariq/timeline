@@ -166,21 +166,21 @@ export async function generateTimeline(
   }
 }
 
-function groupByDate(commits) {
-  const map = {};
+function groupByDate(commits: Commit[]): { labels: string[]; data: number[] } {
+  const map: Record<string, number> = {};
   for (const c of commits) {
-    const date = c.date.slice(0, 10);
+    const date = c.date.toISOString().slice(0, 10);
     map[date] = (map[date] || 0) + 1;
   }
   
   return Object.entries(map)
-    .sort(([a], [b]) => new Date(a) - new Date(b))
+    .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
     .reduce(
       (acc, [date, count]) => {
         acc.labels.push(date);
-        acc.data.push(count);
+        acc.data.push(count as number);
         return acc;
       },
-      { labels: [], data: [] }
+      { labels: [] as string[], data: [] as number[] }
     );
 }

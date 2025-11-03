@@ -1,18 +1,32 @@
 import fetch from 'node-fetch';
+import type { Repository, Commit, GitProvider } from '../types/index.js';
+import type { Ora } from 'ora';
 
-export class SourceHutProvider {
-  private username: string;
+interface SourceHutRepo {
+  name: string;
+  owner: { canonical_name: string };
+  description: string | null;
+  commits_count?: number;
+}
+
+interface SourceHutCommit {
+  id: string;
+  message: string;
+  author: { name: string };
+  timestamp: string;
+}
+
+export class SourceHutProvider implements GitProvider {
   private baseUrl: string;
   private token: string | null;
 
-  constructor(username, token = null) {
-    this.username = username;
+  constructor(private username: string, token: string | null = null) {
     this.baseUrl = 'https://git.sr.ht/api';
     this.token = token || process.env.SOURCEHUT_TOKEN || null;
   }
 
-  getHeaders() {
-    const headers = {
+  private getHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
       'Accept': 'application/json',
       'User-Agent': 'repo-timeline-cli'
     };
@@ -24,66 +38,64 @@ export class SourceHutProvider {
     return headers;
   }
 
-  async fetchRepos() {
+  async fetchRepositories(username: string): Promise<Repository[]> {
     try {
       // SourceHut API for public repos
-      const res = await fetch(`${this.baseUrl}/${this.username}/repos`, {
+      const res = await fetch(`${this.baseUrl}/${username}/repos`, {
         headers: this.getHeaders()
       });
       if (!res.ok) {
         if (res.status === 404) {
-          throw new Error(`User '${this.username}' not found on SourceHut`);
+          throw new Error(`User '${username}' not found on SourceHut`);
         }
         if (res.status === 429) {
           throw new Error(`SourceHut rate limit exceeded. Please set SOURCEHUT_TOKEN or wait before retrying`);
         }
         throw new Error(`Failed to fetch repos: ${res.statusText}`);
       }
-      const data = await res.json();
-      return (data as any).results
-        .filter(r => r.commits_count && r.commits_count > 0)
-        .map((r) => r.name);
+      const data = await res.json() as any;
+      return data.results
+        .filter((r: SourceHutRepo) => r.commits_count && r.commits_count > 0)
+        .map((r: SourceHutRepo) => ({
+          name: r.name,
+          fullName: `${r.owner.canonical_name}/${r.name}`,
+          url: `https://git.sr.ht/${r.owner.canonical_name}/${r.name}`,
+          description: r.description,
+          defaultBranch: 'master'
+        }));
     } catch (error) {
-      if (error.message.includes('not found') || error.message.includes('rate limit')) throw error;
-      throw new Error(`SourceHut API error: ${error.message}`);
-    }
-  }
-
-  async fetchCommits(repo) {
-    // SourceHut uses a different API structure
-    const res = await fetch(`${this.baseUrl}/${this.username}/repos/${repo}/log`, {
-      headers: this.getHeaders()
-    });
-    if (!res.ok) {
-      if (res.status === 429) {
-        throw new Error(`rate limit exceeded`);
+      if (error instanceof Error && (error.message.includes('not found') || error.message.includes('rate limit'))) {
+        throw error;
       }
-      throw new Error(`Failed to fetch commits: ${res.statusText}`);
+      throw new Error(`SourceHut API error: ${error instanceof Error ? error.message : String(error)}`);
     }
-    return await res.json();
   }
 
-  async fetchAllCommits(repo, config = {}) {
+  async fetchCommits(username: string, repoName: string, _spinner?: Ora): Promise<Commit[]> {
     try {
-      const data = await this.fetchCommits(repo) as any;
+      // SourceHut uses a different API structure
+      const res = await fetch(`${this.baseUrl}/${username}/repos/${repoName}/log`, {
+        headers: this.getHeaders()
+      });
+      if (!res.ok) {
+        if (res.status === 429) {
+          throw new Error(`rate limit exceeded`);
+        }
+        throw new Error(`Failed to fetch commits: ${res.statusText}`);
+      }
+      const data = await res.json() as any;
       
       if (!data.results) {
         return [];
       }
       
-      let commits = data.results.map(c => ({
-        date: c.timestamp,
-        author: c.author?.name || 'Unknown',
+      return data.results.map((c: SourceHutCommit) => ({
+        sha: c.id,
         message: c.message,
-        isMerge: false, // SourceHut doesn't provide parent info easily
+        author: c.author?.name || 'Unknown',
+        date: new Date(c.timestamp),
+        repository: repoName
       }));
-      
-      // Filter merge commits if needed (though we can't detect them here)
-      if ((config as any).includeMerges === false) {
-        commits = commits.filter(c => !c.isMerge);
-      }
-      
-      return commits;
     } catch (error) {
       throw error;
     }

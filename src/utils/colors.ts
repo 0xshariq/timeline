@@ -1,6 +1,15 @@
 // Predefined color schemes for better visual consistency
 
-export const colorSchemes = {
+type ColorScheme = 'default' | 'vibrant' | 'pastel' | 'dark';
+
+interface ColorSchemes {
+  default: string[];
+  vibrant: string[];
+  pastel: string[];
+  dark: string[];
+}
+
+export const colorSchemes: ColorSchemes = {
   default: [
     'hsl(0, 70%, 50%)',    // Red
     'hsl(30, 70%, 50%)',   // Orange
@@ -25,16 +34,16 @@ export const colorSchemes = {
   ],
 };
 
-export function getColorScheme(schemeName = 'default') {
-  return colorSchemes[schemeName] || colorSchemes.default;
+export function getColorScheme(schemeName: ColorScheme | string = 'default'): string[] {
+  return colorSchemes[schemeName as ColorScheme] || colorSchemes.default;
 }
 
-export function getRandomColor(scheme = 'default') {
+export function getRandomColor(scheme: ColorScheme | string = 'default'): string {
   const colors = getColorScheme(scheme);
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
-export function getColorByIndex(index, scheme = 'default') {
+export function getColorByIndex(index: number, scheme: ColorScheme | string = 'default'): string {
   const colors = getColorScheme(scheme);
   return colors[index % colors.length];
 }

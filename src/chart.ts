@@ -21,6 +21,15 @@ import { MatrixController, MatrixElement } from 'chartjs-chart-matrix';
 import fs from 'fs';
 import { getColorByIndex } from './utils/colors.js';
 import { ensureCanvasWorks } from './utils/canvas-fix.js';
+import type { ChartDataset as TimelineChartDataset, ChartType } from './types/index.js';
+
+// Internal render dataset type (timeline datasets include optional labels/data)
+type RenderDataset = {
+  label: string;
+  labels?: string[];
+  data?: number[];
+  [key: string]: any;
+};
 
 // Register Chart.js components
 Chart.register(
@@ -44,44 +53,57 @@ Chart.register(
   ChartDataLabels
 );
 
-export async function generateChart(username, platform, datasets, totalCommits = 0, chartType = 'line') {
+export async function generateChart(
+  username: string,
+  platform: string,
+  datasets: RenderDataset[] | TimelineChartDataset[],
+  totalCommits = 0,
+  chartType: ChartType | string = 'line'
+): Promise<void> {
   // Ensure canvas is working before generating charts
   await ensureCanvasWorks();
-  
+
   const filename = `timeline-${chartType}.png`;
-  
+
   switch (chartType) {
     case 'line':
-      await generateLineChart(username, platform, datasets, totalCommits, filename);
+      await generateLineChart(username, platform, datasets as RenderDataset[], totalCommits, filename);
       break;
     case 'bar':
-      await generateBarChart(username, platform, datasets, totalCommits, filename);
+      await generateBarChart(username, platform, datasets as RenderDataset[], totalCommits, filename);
       break;
     case 'pie':
-      await generatePieChart(username, platform, datasets, totalCommits, filename);
+      await generatePieChart(username, platform, datasets as RenderDataset[], totalCommits, filename);
       break;
     case 'doughnut':
-      await generateDoughnutChart(username, platform, datasets, totalCommits, filename);
+      await generateDoughnutChart(username, platform, datasets as RenderDataset[], totalCommits, filename);
       break;
     case 'radar':
-      await generateRadarChart(username, platform, datasets, totalCommits, filename);
+      await generateRadarChart(username, platform, datasets as RenderDataset[], totalCommits, filename);
       break;
     case 'heatmap':
-      await generateHeatmap(username, platform, datasets, totalCommits, filename);
+      await generateHeatmap(username, platform, datasets as RenderDataset[], totalCommits, filename);
       break;
     default:
-      await generateLineChart(username, platform, datasets, totalCommits, filename);
+      await generateLineChart(username, platform, datasets as RenderDataset[], totalCommits, filename);
   }
 }
 
-async function generateLineChart(username, platform, datasets, totalCommits, filename) {
-  // Import canvas dynamically
-  const { createCanvas } = await import('canvas');
+async function generateLineChart(
+  username: string,
+  platform: string,
+  datasets: RenderDataset[],
+  totalCommits: number,
+  filename: string
+): Promise<void> {
+  // Import canvas dynamically (typed as any to avoid canvas-specific types here)
+  const canvasModule = (await import('canvas')) as any;
+  const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
   
   // Merge all labels (unique sorted dates)
   const allDates = [
     ...new Set(datasets.flatMap((d) => d.labels || [])),
-  ].sort((a, b) => new Date(a) - new Date(b));
+  ].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
   if (allDates.length === 0) {
     throw new Error('No data available to generate line chart');
@@ -90,13 +112,13 @@ async function generateLineChart(username, platform, datasets, totalCommits, fil
   // Calculate date range
   const firstDate = allDates[0];
   const lastDate = allDates[allDates.length - 1];
-  const daysDiff = Math.ceil((new Date(lastDate) - new Date(firstDate)) / (1000 * 60 * 60 * 24));
+  const daysDiff = Math.ceil((new Date(lastDate).getTime() - new Date(firstDate).getTime()) / (1000 * 60 * 60 * 24));
 
   // Canvas setup with better sizing
   const width = 1600;
   const height = 800;
   const canvas = createCanvas(width, height);
-  const ctx = canvas.getContext('2d');
+  const ctx: any = canvas.getContext('2d');
 
   // Background color
   ctx.fillStyle = '#ffffff';
@@ -106,8 +128,9 @@ async function generateLineChart(username, platform, datasets, totalCommits, fil
     type: 'line',
     data: {
       labels: allDates,
-      datasets: datasets.map(({ labels, ...rest }, index) => ({
+      datasets: datasets.map(({ labels, ...rest }: RenderDataset, index: number) => ({
         ...rest,
+        data: rest.data || [],
         borderColor: getColorByIndex(index, 'vibrant'),
         backgroundColor: getColorByIndex(index, 'vibrant') + '33', // Add transparency
       })),
@@ -205,9 +228,15 @@ async function generateLineChart(username, platform, datasets, totalCommits, fil
   fs.writeFileSync(filename, buffer);
 }
 
-async function generateBarChart(username, platform, datasets, totalCommits, filename) {
-  // Import canvas dynamically
-  const { createCanvas } = await import('canvas');
+async function generateBarChart(
+  username: string,
+  platform: string,
+  datasets: RenderDataset[],
+  totalCommits: number,
+  filename: string
+): Promise<void> {
+  const canvasModule = (await import('canvas')) as any;
+  const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
   
   // Calculate total commits per repository
   const repoData = datasets.map(ds => ({
@@ -222,7 +251,7 @@ async function generateBarChart(username, platform, datasets, totalCommits, file
   const width = 1600;
   const height = 800;
   const canvas = createCanvas(width, height);
-  const ctx = canvas.getContext('2d');
+  const ctx: any = canvas.getContext('2d');
 
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
@@ -276,9 +305,15 @@ async function generateBarChart(username, platform, datasets, totalCommits, file
   fs.writeFileSync(filename, buffer);
 }
 
-async function generatePieChart(username, platform, datasets, totalCommits, filename) {
-  // Import canvas dynamically
-  const { createCanvas } = await import('canvas');
+async function generatePieChart(
+  username: string,
+  platform: string,
+  datasets: RenderDataset[],
+  totalCommits: number,
+  filename: string
+): Promise<void> {
+  const canvasModule = (await import('canvas')) as any;
+  const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
   
   const repoData = datasets.map(ds => ({
     name: ds.label,
@@ -292,7 +327,7 @@ async function generatePieChart(username, platform, datasets, totalCommits, file
   const width = 1600;
   const height = 800;
   const canvas = createCanvas(width, height);
-  const ctx = canvas.getContext('2d');
+  const ctx: any = canvas.getContext('2d');
 
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
@@ -329,7 +364,7 @@ async function generatePieChart(username, platform, datasets, totalCommits, file
           font: { weight: 'bold', size: 12 },
           formatter: (value, ctx) => {
             const percentage = ((value / totalCommits) * 100).toFixed(1);
-            return percentage > 3 ? `${percentage}%` : '';
+            return parseFloat(percentage) > 3 ? `${percentage}%` : '';
           },
         },
       },
@@ -340,9 +375,15 @@ async function generatePieChart(username, platform, datasets, totalCommits, file
   fs.writeFileSync(filename, buffer);
 }
 
-async function generateDoughnutChart(username, platform, datasets, totalCommits, filename) {
-  // Import canvas dynamically
-  const { createCanvas } = await import('canvas');
+async function generateDoughnutChart(
+  username: string,
+  platform: string,
+  datasets: RenderDataset[],
+  totalCommits: number,
+  filename: string
+): Promise<void> {
+  const canvasModule = (await import('canvas')) as any;
+  const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
   
   const repoData = datasets.map(ds => ({
     name: ds.label,
@@ -356,7 +397,7 @@ async function generateDoughnutChart(username, platform, datasets, totalCommits,
   const width = 1600;
   const height = 800;
   const canvas = createCanvas(width, height);
-  const ctx = canvas.getContext('2d');
+  const ctx: any = canvas.getContext('2d');
 
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
@@ -393,7 +434,7 @@ async function generateDoughnutChart(username, platform, datasets, totalCommits,
           font: { weight: 'bold', size: 12 },
           formatter: (value, ctx) => {
             const percentage = ((value / totalCommits) * 100).toFixed(1);
-            return percentage > 3 ? `${percentage}%` : '';
+            return parseFloat(percentage) > 3 ? `${percentage}%` : '';
           },
         },
       },
@@ -404,9 +445,15 @@ async function generateDoughnutChart(username, platform, datasets, totalCommits,
   fs.writeFileSync(filename, buffer);
 }
 
-async function generateRadarChart(username, platform, datasets, totalCommits, filename) {
-  // Import canvas dynamically
-  const { createCanvas } = await import('canvas');
+async function generateRadarChart(
+  username: string,
+  platform: string,
+  datasets: RenderDataset[],
+  totalCommits: number,
+  filename: string
+): Promise<void> {
+  const canvasModule = (await import('canvas')) as any;
+  const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
   
   // Take top 6 repositories for radar chart
   const topRepos = datasets
@@ -427,7 +474,7 @@ async function generateRadarChart(username, platform, datasets, totalCommits, fi
   const width = 1600;
   const height = 800;
   const canvas = createCanvas(width, height);
-  const ctx = canvas.getContext('2d');
+  const ctx: any = canvas.getContext('2d');
 
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
@@ -482,9 +529,15 @@ async function generateRadarChart(username, platform, datasets, totalCommits, fi
   fs.writeFileSync(filename, buffer);
 }
 
-async function generateHeatmap(username, platform, datasets, totalCommits, filename) {
-  // Import canvas dynamically
-  const { createCanvas } = await import('canvas');
+async function generateHeatmap(
+  username: string,
+  platform: string,
+  datasets: RenderDataset[],
+  totalCommits: number,
+  filename: string
+): Promise<void> {
+  const canvasModule = (await import('canvas')) as any;
+  const createCanvas: (w: number, h: number) => any = canvasModule.createCanvas;
   
   // Aggregate all commits by date
   const commitsByDate = {};
@@ -526,7 +579,7 @@ async function generateHeatmap(username, platform, datasets, totalCommits, filen
   const width = 1600;
   const height = 400;
   const canvas = createCanvas(width, height);
-  const ctx = canvas.getContext('2d');
+  const ctx: any = canvas.getContext('2d');
 
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
@@ -537,9 +590,9 @@ async function generateHeatmap(username, platform, datasets, totalCommits, filen
       datasets: [{
         label: 'Commits',
         data: heatmapData,
-        backgroundColor: (ctx) => {
-          if (!ctx || !ctx.raw || ctx.raw.v === undefined) return '#ebedf0';
-          const value = ctx.raw.v;
+        backgroundColor: (context: any) => {
+          if (!context || !context.raw || context.raw.v === undefined) return '#ebedf0';
+          const value = context.raw.v as number;
           if (value === 0) return '#ebedf0';
           const intensity = value / maxCommits;
           if (intensity < 0.25) return '#9be9a8';
@@ -549,13 +602,13 @@ async function generateHeatmap(username, platform, datasets, totalCommits, filen
         },
         borderWidth: 1,
         borderColor: '#ffffff',
-        width: ({ chart }) => {
+        width: ({ chart }: any) => {
           const chartArea = chart.chartArea || { width: 1400 };
-          return Math.max(chartArea.width / 53 - 2, 10);
+          return Math.max((chartArea.width as number) / 53 - 2, 10);
         },
-        height: ({ chart }) => {
+        height: ({ chart }: any) => {
           const chartArea = chart.chartArea || { height: 300 };
-          return Math.max(chartArea.height / 7 - 2, 10);
+          return Math.max((chartArea.height as number) / 7 - 2, 10);
         },
       }],
     },
@@ -577,9 +630,10 @@ async function generateHeatmap(username, platform, datasets, totalCommits, filen
         tooltip: {
           callbacks: {
             title: () => '',
-            label: (ctx) => {
-              if (!ctx || !ctx.raw || ctx.raw.v === undefined) return 'No data';
-              return `${ctx.raw.v} commits`;
+            label: (ctx: any) => {
+              const v = ctx?.raw?.v;
+              if (v === undefined) return 'No data';
+              return `${v} commits`;
             },
           },
         },

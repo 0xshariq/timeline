@@ -230,8 +230,11 @@ async function interactiveMode(options: CommandOptions): Promise<void> {
   }
 
   // Select chart type if not provided
-  let chartType = options.chart || options.type;
-  if (!chartType) {
+  let chartType: ChartType = 'line'; // Default
+  const chartTypeOption = options.chart || options.type;
+  if (chartTypeOption) {
+    chartType = chartTypeOption as ChartType;
+  } else {
     chartType = await select({
       message: chalk.cyan('Select chart type:'),
       choices: [
@@ -423,7 +426,7 @@ ${chalk.cyan.bold('More Info:')}
   .option('-u, --username <username>', 'Username on the platform')
   .option('-r, --repos <repos>', 'Comma-separated repository names')
   .option('-a, --all', 'Analyze all repositories')
-  .option('-t, --type <type>', 'Chart type (line, bar, pie, doughnut, radar, heatmap)', 'line')
+  .option('-t, --type <type>', 'Chart type (line, bar, pie, doughnut, radar, heatmap)')
   .option('-c, --chart <type>', 'Alias for --type')
   .option('-v, --verbose', 'Show detailed progress')
   .option('-q, --quiet', 'Minimal output')

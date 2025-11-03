@@ -1,6 +1,25 @@
 // Statistics and analytics utilities
 
-export function calculateStats(datasets) {
+interface Dataset {
+  label: string;
+  data: number[];
+  labels?: string[];
+}
+
+interface StatsResult {
+  totalCommits: number;
+  repositoriesAnalyzed: number;
+  dateRange: {
+    start: string | null;
+    end: string | null;
+    days: number;
+  };
+  topRepos: Array<{ name: string; commits: number }>;
+  averageCommitsPerRepo: number;
+  averageCommitsPerDay: number;
+}
+
+export function calculateStats(datasets: Dataset[]): StatsResult | null {
   if (!datasets || datasets.length === 0) {
     return null;
   }
@@ -47,19 +66,19 @@ export function calculateStats(datasets) {
     
     const startDate = new Date(stats.dateRange.start);
     const endDate = new Date(stats.dateRange.end);
-    stats.dateRange.days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    stats.dateRange.days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
   }
 
   // Calculate averages
   stats.averageCommitsPerRepo = Math.round(stats.totalCommits / stats.repositoriesAnalyzed);
   if (stats.dateRange.days > 0) {
-    stats.averageCommitsPerDay = (stats.totalCommits / stats.dateRange.days).toFixed(2);
+    stats.averageCommitsPerDay = parseFloat((stats.totalCommits / stats.dateRange.days).toFixed(2));
   }
 
   return stats;
 }
 
-export function formatStats(stats) {
+export function formatStats(stats: StatsResult | null): string {
   if (!stats) return '';
 
   const lines = [
