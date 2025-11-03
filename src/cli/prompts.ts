@@ -262,13 +262,55 @@ export async function promptForBasicOptions(): Promise<string[]> {
  * Wrapper function for chart customization
  * Routes to appropriate customization function based on chart type
  */
-export async function promptForCustomization(chartType?: string): Promise<any> {
+export async function promptForCustomization(chartType?: string): Promise<{
+  wantsCustomization: boolean;
+  colors?: string[];
+  useGradient?: boolean;
+  gradientStart?: string;
+  gradientEnd?: string;
+  borderWidth?: number;
+  labelSize?: number;
+  legendPosition?: string;
+  advancedOptions?: string[];
+  chart3DOptions?: any;
+}> {
   // Check if it's a 3D chart
   const chart3DTypes = ['bar3d', 'line3d', 'scatter3d', 'surface3d', 'bubble3d'];
   if (chartType && chart3DTypes.includes(chartType)) {
-    return await promptFor3DCustomization();
+    const result = await promptFor3DCustomization();
+    if (!result) {
+      return { wantsCustomization: false };
+    }
+    // Return in expected format with 3D options
+    return { 
+      wantsCustomization: true,
+      chart3DOptions: result 
+    };
   }
 
   // For 2D charts
-  return await promptFor2DCustomization();
+  const result = await promptFor2DCustomization();
+  if (!result) {
+    return { wantsCustomization: false };
+  }
+
+  // Convert ChartCustomization to old format expected by CLI
+  const advancedOptions: string[] = [];
+  if (result.enableExport) advancedOptions.push('export');
+  if (result.enableAnnotations) advancedOptions.push('annotations');
+  if (result.enableZoom) advancedOptions.push('zoom');
+  if (!result.showGridLines) advancedOptions.push('noGrid');
+  if (!result.animate) advancedOptions.push('noAnimate');
+
+  return {
+    wantsCustomization: true,
+    colors: result.colors,
+    useGradient: result.useGradient,
+    gradientStart: result.gradientColors?.start,
+    gradientEnd: result.gradientColors?.end,
+    borderWidth: result.borderWidth,
+    labelSize: result.labelFontSize,
+    legendPosition: result.legendPosition,
+    advancedOptions,
+  };
 }
