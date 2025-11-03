@@ -24,8 +24,9 @@ export async function generateChart(
   
   if (chart3DTypes.includes(chartType)) {
     // Import 3D chart generator dynamically
-    const { generate3DChart } = await import('./3d/index');
-    return await generate3DChart(username, platform, datasets as Dataset3D[], totalCommits, chartType, customization);
+    const { generate3DChart } = await import('./3d/index.js');
+    // 3D charts use separate options system - pass undefined to use defaults
+    return await generate3DChart(username, platform, datasets as Dataset3D[], totalCommits, chartType, undefined);
   }
   
   // Default to 2D charts

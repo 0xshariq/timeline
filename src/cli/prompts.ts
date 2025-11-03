@@ -1,7 +1,8 @@
 import { input, select, confirm, checkbox } from '@inquirer/prompts';
 import chalk from 'chalk';
 import type { Platform, ChartType, CommandOptions } from '../types/index.js';
-import { defaultChartOptions } from '../charts/2d/chartOptions.js';
+import { promptFor2DCustomization } from '../charts/2d/customization.js';
+import { promptFor3DCustomization } from '../charts/3d/customization.js';
 
 /**
  * Interactive prompts for CLI
@@ -258,177 +259,16 @@ export async function promptForBasicOptions(): Promise<string[]> {
 }
 
 /**
- * Prompt for chart customization
+ * Wrapper function for chart customization
+ * Routes to appropriate customization function based on chart type
  */
-export async function promptForCustomization(): Promise<{
-  wantsCustomization: boolean;
-  colors?: string[];
-  useGradient?: boolean;
-  gradientStart?: string;
-  gradientEnd?: string;
-  borderWidth?: number;
-  labelSize?: number;
-  legendPosition?: string;
-  advancedOptions?: string[];
-}> {
-  // Show default customization values
-  console.log('\n' + chalk.cyan.bold('🎨 Default Chart Customization:'));
-  console.log(chalk.gray('━'.repeat(50)));
-  console.log(chalk.white(`  Border Width:     ${chalk.bold(defaultChartOptions.borderWidth + 'px')}`));
-  console.log(chalk.white(`  Label Size:       ${chalk.bold(defaultChartOptions.labelFontSize + 'px')}`));
-  console.log(chalk.white(`  Legend Position:  ${chalk.bold(defaultChartOptions.legendPosition)}`));
-  console.log(chalk.white(`  Colors:           ${chalk.bold('Auto-generated vibrant colors')}`));
-  console.log(chalk.white(`  Animations:       ${chalk.bold(defaultChartOptions.animate ? 'Enabled' : 'Disabled')} (${defaultChartOptions.animationDuration}ms, ${defaultChartOptions.animationEasing})`));
-  console.log(chalk.white(`  Grid Lines:       ${chalk.bold(defaultChartOptions.showGridLines ? 'Visible' : 'Hidden')}`));
-  console.log(chalk.white(`  Scale Type:       ${chalk.bold(defaultChartOptions.scaleType)}`));
-  console.log(chalk.white(`  Tooltips:         ${chalk.bold(defaultChartOptions.showTooltips ? 'Enabled' : 'Disabled')}`));
-  console.log(chalk.gray('━'.repeat(50)));
-  
-  const wantsCustomization = await confirm({
-    message: chalk.cyan('\nDo you want to customize these settings?'),
-    default: false,
-  });
-
-  if (!wantsCustomization) {
-    return { wantsCustomization: false };
+export async function promptForCustomization(chartType?: string): Promise<any> {
+  // Check if it's a 3D chart
+  const chart3DTypes = ['bar3d', 'line3d', 'scatter3d', 'surface3d', 'bubble3d'];
+  if (chartType && chart3DTypes.includes(chartType)) {
+    return await promptFor3DCustomization();
   }
 
-  // Color customization
-  const colorChoice = await select({
-    message: chalk.cyan('Color scheme:'),
-    choices: [
-      { name: 'Auto (default vibrant colors)', value: 'auto' },
-      { name: 'Custom colors (enter hex codes)', value: 'custom' },
-      { name: 'Gradient', value: 'gradient' },
-      { name: 'Modern Tech', value: 'modern' },
-      { name: 'Nature', value: 'nature' },
-      { name: 'Sunset', value: 'sunset' },
-      { name: 'Ocean', value: 'ocean' },
-    ],
-  });
-
-  let colors: string[] | undefined;
-  let useGradient = false;
-  let gradientStart: string | undefined;
-  let gradientEnd: string | undefined;
-
-  if (colorChoice === 'custom') {
-    const colorsInput = await input({
-      message: chalk.cyan('Enter hex colors (comma-separated, e.g., #FF5733,#33FF57):'),
-      default: '#FF6B6B,#4ECDC4,#45B7D1',
-      validate: (value) => {
-        const colors = value.split(',').map(c => c.trim());
-        for (const color of colors) {
-          if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
-            return `Invalid hex color: ${color}. Use format #RRGGBB (e.g., #FF5733)`;
-          }
-        }
-        return true;
-      },
-    });
-    colors = colorsInput.split(',').map(c => c.trim());
-  } else if (colorChoice === 'gradient') {
-    useGradient = true;
-    gradientStart = await input({
-      message: chalk.cyan('Gradient start color:'),
-      default: defaultChartOptions.gradientColors.start,
-      validate: (value) => {
-        if (!/^#[0-9A-Fa-f]{6}$/.test(value)) {
-          return `Invalid hex color. Use format #RRGGBB (e.g., #667eea)`;
-        }
-        return true;
-      },
-    });
-    gradientEnd = await input({
-      message: chalk.cyan('Gradient end color:'),
-      default: defaultChartOptions.gradientColors.end,
-      validate: (value) => {
-        if (!/^#[0-9A-Fa-f]{6}$/.test(value)) {
-          return `Invalid hex color. Use format #RRGGBB (e.g., #764ba2)`;
-        }
-        return true;
-      },
-    });
-  } else if (colorChoice === 'modern') {
-    colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe'];
-  } else if (colorChoice === 'nature') {
-    colors = ['#56ab2f', '#a8e063', '#38ef7d', '#11998e', '#0575e6'];
-  } else if (colorChoice === 'sunset') {
-    colors = ['#ff6b6b', '#ee5a6f', '#c44569', '#f8b500', '#feca57'];
-  } else if (colorChoice === 'ocean') {
-    colors = ['#1e3799', '#0c2461', '#4a69bd', '#60a3bc', '#82ccdd'];
-  }
-
-  // Additional customizations
-  const advancedOptions = await checkbox({
-    message: chalk.cyan('Select additional customizations:'),
-    choices: [
-      { name: 'Customize border width', value: 'border' },
-      { name: 'Customize label size', value: 'labels' },
-      { name: 'Customize legend position', value: 'legend' },
-      { name: 'Disable grid lines', value: 'noGrid' },
-      { name: 'Disable animations', value: 'noAnimate' },
-      { name: 'Enable export plugin', value: 'export' },
-      { name: 'Enable annotations plugin', value: 'annotations' },
-      { name: 'Enable zoom/pan plugin', value: 'zoom' },
-    ],
-  });
-
-  let borderWidth: number | undefined;
-  let labelSize: number | undefined;
-  let legendPosition: string | undefined;
-
-  if (advancedOptions.includes('border')) {
-    const borderInput = await input({
-      message: chalk.cyan('Border width (pixels):'),
-      default: defaultChartOptions.borderWidth.toString(),
-      validate: (value) => {
-        const num = parseInt(value);
-        if (isNaN(num)) return 'Please enter a valid number';
-        if (num < 0) return 'Border width must be positive';
-        if (num > 20) return 'Border width must be 20 or less';
-        return true;
-      },
-    });
-    borderWidth = parseInt(borderInput);
-  }
-
-  if (advancedOptions.includes('labels')) {
-    const labelInput = await input({
-      message: chalk.cyan('Label font size (pixels):'),
-      default: defaultChartOptions.labelFontSize.toString(),
-      validate: (value) => {
-        const num = parseInt(value);
-        if (isNaN(num)) return 'Please enter a valid number';
-        if (num < 6) return 'Font size must be at least 6';
-        if (num > 72) return 'Font size must be 72 or less';
-        return true;
-      },
-    });
-    labelSize = parseInt(labelInput);
-  }
-
-  if (advancedOptions.includes('legend')) {
-    legendPosition = await select({
-      message: chalk.cyan('Legend position:'),
-      choices: [
-        { name: 'Bottom', value: 'bottom' },
-        { name: 'Top', value: 'top' },
-        { name: 'Left', value: 'left' },
-        { name: 'Right', value: 'right' },
-      ],
-    });
-  }
-
-  return {
-    wantsCustomization: true,
-    colors,
-    useGradient,
-    gradientStart,
-    gradientEnd,
-    borderWidth,
-    labelSize,
-    legendPosition,
-    advancedOptions,
-  };
+  // For 2D charts
+  return await promptFor2DCustomization();
 }

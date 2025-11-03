@@ -71,7 +71,7 @@ async function interactiveMode(options: CommandOptions): Promise<void> {
   console.log(`[DEBUG CLI] Selected chart type: ${chartType}`);
 
   const basicOptions = await promptForBasicOptions();
-  const customization = await promptForCustomization();
+  const customization = await promptForCustomization(chartType);
 
   // Build chart customization options
   const chartOptions = {

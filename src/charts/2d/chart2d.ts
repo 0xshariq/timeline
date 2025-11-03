@@ -20,7 +20,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import ChartDataLabels from 'chartjs-plugin-datalabels';
+// import ChartDataLabels from 'chartjs-plugin-datalabels'; // Commented out - causes segfault with node-canvas
 import { MatrixController, MatrixElement } from 'chartjs-chart-matrix';
 import fs from 'fs';
 import { getColorByIndex } from '../../utils/colors.js';
@@ -66,8 +66,7 @@ Chart.register(
   TimeScale,
   Title,
   Tooltip,
-  Legend,
-  ChartDataLabels
+  Legend
 );
 
 export async function generateChart(
@@ -188,7 +187,7 @@ async function generateLineChart(
     },
     options: {
       responsive: false,
-      animation: false, // Disable animation for node-canvas
+      // Use user's animation preference
       ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
@@ -205,9 +204,6 @@ async function generateLineChart(
         },
         legend: getLegendConfig({ ...chartOptions, showLegend: datasets.length <= 15 && chartOptions.showLegend }),
         tooltip: getTooltipConfig(chartOptions),
-        datalabels: {
-          display: false,
-        },
       },
       scales: {
         x: {
@@ -311,7 +307,7 @@ async function generateBarChart(
     },
     options: {
       responsive: false,
-      animation: false, // Disable animation for node-canvas
+      // Use user's animation preference
       ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
@@ -324,14 +320,6 @@ async function generateBarChart(
           display: false,
         },
         tooltip: getTooltipConfig(chartOptions),
-        datalabels: {
-          display: chartOptions.showLabels,
-          anchor: 'end',
-          align: 'top',
-          formatter: (value) => value,
-          font: { weight: 'bold', size: chartOptions.labelFontSize },
-          color: chartOptions.labelColor,
-        },
       },
       scales: {
         x: {
@@ -399,7 +387,7 @@ async function generatePieChart(
     },
     options: {
       responsive: false,
-      animation: false, // Disable animation for node-canvas
+      // Use user's animation preference
       ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
@@ -413,14 +401,6 @@ async function generatePieChart(
         },
         legend: getLegendConfig({ ...chartOptions, legendPosition: 'right' }),
         tooltip: getTooltipConfig(chartOptions),
-        datalabels: {
-          color: '#fff',
-          font: { weight: 'bold', size: chartOptions.labelFontSize },
-          formatter: (value, ctx) => {
-            const percentage = ((value / totalCommits) * 100).toFixed(1);
-            return parseFloat(percentage) > 3 ? `${percentage}%` : '';
-          },
-        },
       },
     },
   });
@@ -476,7 +456,7 @@ async function generateDoughnutChart(
     },
     options: {
       responsive: false,
-      animation: false, // Disable animation for node-canvas
+      // Use user's animation preference
       ...getAnimationConfig(chartOptions),
       plugins: {
         title: {
@@ -490,14 +470,6 @@ async function generateDoughnutChart(
         },
         legend: getLegendConfig({ ...chartOptions, legendPosition: 'right' }),
         tooltip: getTooltipConfig(chartOptions),
-        datalabels: {
-          color: '#fff',
-          font: { weight: 'bold', size: chartOptions.labelFontSize },
-          formatter: (value, ctx) => {
-            const percentage = ((value / totalCommits) * 100).toFixed(1);
-            return parseFloat(percentage) > 3 ? `${percentage}%` : '';
-          },
-        },
       },
     },
   });

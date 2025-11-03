@@ -2,7 +2,7 @@
  * 3D Line Chart Generator
  */
 
-import type { ChartCustomization } from '../../types/index.js';
+import type { Chart3DOptions } from './options.js';
 import type { Dataset3D } from './types.js';
 
 /**
@@ -14,7 +14,7 @@ export async function generate3DLineChart(
   datasets: Dataset3D[],
   totalCommits: number,
   filename: string,
-  customization?: ChartCustomization
+  options?: Partial<Chart3DOptions>
 ): Promise<void> {
   console.log('[3D] 3D Line chart generation not yet implemented');
   throw new Error('3D Line chart generation coming soon! Try 3D Bar chart for now.');

@@ -13,8 +13,8 @@
  */
 
 import fs from 'fs';
-import type { ChartCustomization } from '../../types/index.js';
 import type { Dataset3D } from './types.js';
+import type { Chart3DOptions } from './options.js';
 import { generate3DBarChart } from './bar3d.js';
 import { generate3DLineChart } from './line3d.js';
 import { generate3DScatterChart } from './scatter3d.js';
@@ -23,6 +23,7 @@ import { generate3DBubbleChart } from './bubble3d.js';
 
 // Export types for external use
 export type { Dataset3D } from './types.js';
+export type { Chart3DOptions } from './options.js';
 
 /**
  * Main 3D chart generation router
@@ -34,7 +35,7 @@ export async function generate3DChart(
   datasets: Dataset3D[],
   totalCommits: number,
   chartType: string,
-  customization?: ChartCustomization
+  options?: Partial<Chart3DOptions>
 ): Promise<string> {
   // Create charts directory if it doesn't exist
   const chartsDir = 'charts';
@@ -48,19 +49,19 @@ export async function generate3DChart(
 
   switch (chartType) {
     case 'bar3d':
-      await generate3DBarChart(username, platform, datasets, totalCommits, filename, customization);
+      await generate3DBarChart(username, platform, datasets, totalCommits, filename, options);
       break;
     case 'line3d':
-      await generate3DLineChart(username, platform, datasets, totalCommits, filename, customization);
+      await generate3DLineChart(username, platform, datasets, totalCommits, filename, options);
       break;
     case 'scatter3d':
-      await generate3DScatterChart(username, platform, datasets, totalCommits, filename, customization);
+      await generate3DScatterChart(username, platform, datasets, totalCommits, filename, options);
       break;
     case 'surface3d':
-      await generate3DSurfaceChart(username, platform, datasets, totalCommits, filename, customization);
+      await generate3DSurfaceChart(username, platform, datasets, totalCommits, filename, options);
       break;
     case 'bubble3d':
-      await generate3DBubbleChart(username, platform, datasets, totalCommits, filename, customization);
+      await generate3DBubbleChart(username, platform, datasets, totalCommits, filename, options);
       break;
     default:
       throw new Error(`Unknown 3D chart type: ${chartType}. Available: bar3d, line3d, scatter3d, surface3d, bubble3d`);
