@@ -16,17 +16,18 @@ _Beautiful CLI • Multi-Platform • Interactive • Analytics_
 
 ## ✨ Features
 
-- 🎨 **10 Chart Types** - Line, Bar, Pie, Doughnut, Radar, Heatmap, Polar Area, Scatter, Bubble, and Mixed
+- 🎨 **15 Chart Types** - 10 2D charts (Chart.js) + 5 3D charts (Three.js)
 - 🎨 **Full Customization** - Colors, gradients, borders, animations, scales, labels, tooltips, and legends
 - 🌐 **Multi-Platform Support** - GitHub, GitLab, Bitbucket, and SourceHut
 - 💻 **Interactive CLI** - Gradient banners, colored prompts, progress spinners
 - 📊 **Smart Analytics** - Statistics dashboard with top repositories
 - 🎯 **Flexible Selection** - Analyze all repos or choose specific ones
 - 🚀 **Real-time Progress** - Live updates while fetching commit data
-- 🎨 **Color Schemes** - Vibrant, consistent colors for better readability
-- 📈 **Advanced Visualizations** - Heatmaps, contribution patterns, activity analysis
-- 💾 **Export Options** - PNG images with high resolution (1600x800px)
-- ⚙️ **Config Management** - Save default settings (username, platform, chart type)
+- � **3D Visualizations** - Modern Three.js powered 3D charts
+- 💾 **Export Options** - High-resolution PNG images
+- ⚙️ **Config Management** - Save default settings
+
+> 📊 **Detailed Chart Documentation:** See [docs/CHARTS.md](docs/CHARTS.md) for comprehensive information about all chart types, including visual examples, use cases, and best practices.
 
 ---
 
@@ -583,158 +584,50 @@ headers: { 'PRIVATE-TOKEN': 'YOUR_GITLAB_TOKEN' }
 
 ---
 
-## � Output
+## 📈 Chart Types
 
-## 📈 Chart Types & Output
+### 2D Charts (Chart.js)
 
-### Available Chart Types
+| Chart Type | Best For | Output |
+|------------|----------|--------|
+| 📈 **Line** | Timeline trends, activity patterns | `timeline-line.png` |
+| 📊 **Bar** | Repository comparison, totals | `timeline-bar.png` |
+| 🥧 **Pie** | Contribution percentages | `timeline-pie.png` |
+| 🍩 **Doughnut** | Modern contribution breakdown | `timeline-doughnut.png` |
+| 📡 **Radar** | Multi-metric comparison | `timeline-radar.png` |
+| 🔥 **Heatmap** | Daily activity calendar | `timeline-heatmap.png` |
+| 🎯 **Polar Area** | Radial visualization | `timeline-polarArea.png` |
+| ⚡ **Scatter** | Pattern detection | `timeline-scatter.png` |
+| � **Bubble** | Multi-dimensional data | `timeline-bubble.png` |
+| 🎨 **Mixed** | Combined line + bar | `timeline-mixed.png` |
 
-#### 📈 Line Chart (Default)
+### 3D Charts (Three.js)
 
-**Best for:** Timeline analysis, trend visualization
+| Chart Type | Best For | Output | Status |
+|------------|----------|--------|--------|
+| � **Bar 3D** | Impressive presentations | `timeline-bar3d.png` | ✅ Available |
+| 📈 **Line 3D** | 3D trend visualization | `timeline-line3d.png` | 🚧 Coming Soon |
+| 🔮 **Scatter 3D** | Multi-dimensional patterns | `timeline-scatter3d.png` | 🚧 Coming Soon |
+| 🌊 **Surface 3D** | Activity landscapes | `timeline-surface3d.png` | 🚧 Coming Soon |
+| � **Bubble 3D** | Four-dimensional data | `timeline-bubble3d.png` | 🚧 Coming Soon |
 
-**Output:** `timeline-line.png`
+> 📚 **Full Documentation:** For detailed information about each chart type, including visual characteristics, features, and usage examples, see [docs/CHARTS.md](docs/CHARTS.md)
 
+### Quick Examples
+
+```bash
+# 2D Line chart (default)
+timeline -p github -u octocat
+
+# 3D Bar chart
+timeline -p github -u octocat -t bar3d
+
+# Heatmap for daily patterns
+timeline -p github -u octocat -t heatmap
+
+# Pie chart with custom colors
+timeline -p github -u octocat -t pie --colors "#FF6B6B,#4ECDC4,#45B7D1"
 ```
-• Shows commit frequency over time
-• Multiple repositories as different colored lines
-• Date range on X-axis, commit count on Y-axis
-• Perfect for seeing activity patterns
-```
-
-#### 📊 Bar Chart
-
-**Best for:** Repository comparison, total commits
-
-**Output:** `timeline-bar.png`
-
-```
-• Compares total commits across repositories
-• Each bar represents a different repository
-• Easy to identify most active projects
-• Great for portfolio showcases
-```
-
-#### 🥧 Pie Chart
-
-**Best for:** Contribution percentage, repository share
-
-**Output:** `timeline-pie.png`
-
-```
-• Shows percentage of commits per repository
-• Visual breakdown of contribution distribution
-• Color-coded segments with percentages
-• Ideal for understanding project focus
-```
-
-#### 🍩 Doughnut Chart
-
-**Best for:** Similar to pie but with modern look
-
-**Output:** `timeline-doughnut.png`
-
-```
-• Same as pie chart with center hole
-• More modern and aesthetic design
-• Shows percentages and repository names
-• Center can display total commits
-```
-
-#### 📡 Radar Chart
-
-**Best for:** Multi-dimensional comparison
-
-**Output:** `timeline-radar.png`
-
-```
-• Compares repositories across multiple metrics
-• Shows commits, contributors, activity patterns
-• Pentagon/hexagon shape for 5-6 metrics
-• Perfect for comprehensive repository analysis
-```
-
-#### 🔥 Heatmap (GitHub-style)
-
-**Best for:** Daily activity patterns, contribution calendar
-
-**Output:** `timeline-heatmap.png`
-
-```
-• GitHub-style contribution calendar
-• Each cell represents a day
-• Color intensity shows commit frequency
-• Week rows, day columns (365 days)
-• Perfect for seeing work patterns
-```
-
-#### 🎯 Polar Area Chart
-
-**Best for:** Circular data visualization, radial comparison
-
-**Output:** `timeline-polarArea.png`
-
-```
-• Radial representation of repository data
-• Similar to pie chart but with radius variation
-• Shows both proportion and magnitude
-• Beautiful circular design
-• Great for presentations
-```
-
-#### ⚡ Scatter Chart
-
-**Best for:** Finding patterns, outlier detection, distribution analysis
-
-**Output:** `timeline-scatter.png`
-
-```
-• Plots individual commits over time
-• Shows commit distribution patterns
-• Identifies activity clusters and gaps
-• Great for detecting unusual patterns
-• X-axis: time, Y-axis: commits
-```
-
-#### 💬 Bubble Chart
-
-**Best for:** Multi-dimensional data with three variables
-
-**Output:** `timeline-bubble.png`
-
-```
-• Like scatter but with bubble sizes
-• Shows repository size, activity, and time
-• Bubble size represents commit count
-• Perfect for complex relationships
-• Multiple dimensions in one chart
-```
-
-#### 🎨 Mixed Chart
-
-**Best for:** Combining different chart types, complex comparisons
-
-**Output:** `timeline-mixed.png`
-
-```
-• Combines line and bar charts
-• Show different data types together
-• Compare trends and totals
-• Highly customizable
-• Professional analytics appearance
-```
-
-### Generated Chart Features
-
-All charts include:
-
-✅ **High Resolution** - 1600x800px for clarity  
-✅ **Professional Design** - Clean, modern aesthetics  
-✅ **Color Coded** - Vibrant, consistent color schemes  
-✅ **Proper Scaling** - Auto-adjusted axes  
-✅ **Metadata** - Titles with statistics  
-✅ **Legend** - Clear repository identification  
-✅ **Data Labels** - Percentages, values on charts
 
 ---
 
