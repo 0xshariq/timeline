@@ -180,7 +180,7 @@ async function interactiveMode(options: CommandOptions): Promise<void> {
     }
 
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
+
     // Provide helpful error messages
     let helpText = '';
     if (errorMessage.includes('No repositories found')) {
@@ -192,9 +192,9 @@ async function interactiveMode(options: CommandOptions): Promise<void> {
     } else if (errorMessage.includes('network') || errorMessage.includes('ENOTFOUND')) {
       helpText = '\n' + chalk.yellow('Tip: Check your internet connection and try again.');
     }
-    
+
     console.log('\n' + boxen(
-      chalk.red.bold('❌ Error: ') + chalk.white(errorMessage) + helpText, 
+      chalk.red.bold('❌ Error: ') + chalk.white(errorMessage) + helpText,
       {
         padding: 0.5,
         margin: 0.5,
